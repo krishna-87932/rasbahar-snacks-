@@ -4,12 +4,14 @@ from tempfile import gettempdir
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-rasbahar-snacks-change-in-production-xyz123'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-rasbahar-snacks-change-in-production-xyz123')
 
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-# ALLOWED_HOSTS = ['rasbaharsnacks123.pythonanywhere.com', 'localhost', '127.0.0.1','192.168.43.8','0.0.0.0']
-ALLOWED_HOSTS = ['*']  # Use specific hosts in production
+ALLOWED_HOSTS = os.environ.get(
+    'DJANGO_ALLOWED_HOSTS',
+    'rasbaharsnacks123.pythonanywhere.com,localhost,127.0.0.1,192.168.43.8,0.0.0.0'
+).split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -58,7 +60,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'rasbahar_snacks.wsgi.application'
 
-DB_PATH = os.environ.get('DB_PATH', '/tmp/rasbahar_snacks.sqlite3')
+DB_PATH = os.environ.get('DB_PATH', str(BASE_DIR / 'db.sqlite3'))
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
 DATABASES = {
@@ -67,6 +69,9 @@ DATABASES = {
         'NAME': DB_PATH,
     }
 }
+
+MEDIA_ROOT = BASE_DIR / 'media'
+os.makedirs(MEDIA_ROOT, exist_ok=True)
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
