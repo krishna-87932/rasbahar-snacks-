@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+from tempfile import gettempdir
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -57,10 +58,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'rasbahar_snacks.wsgi.application'
 
+DB_PATH = os.environ.get('DB_PATH', str(Path(gettempdir()) / 'rasbahar_snacks.sqlite3'))
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DB_PATH,
     }
 }
 # DATABASES = {
