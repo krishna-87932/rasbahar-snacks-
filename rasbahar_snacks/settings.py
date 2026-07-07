@@ -58,7 +58,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'rasbahar_snacks.wsgi.application'
 
-DB_PATH = os.environ.get('DB_PATH', str(Path(gettempdir()) / 'rasbahar_snacks.sqlite3'))
+DB_PATH = os.environ.get('DB_PATH', '/tmp/rasbahar_snacks.sqlite3')
+os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
 DATABASES = {
     'default': {
