@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}Menu – Rasbahar Snacks{% endblock %}
+{% block extra_css %}
+<style>
+.page-hero {
+  background: linear-gradient(135deg, #FF5722, #E64A19);
+  padding: 2.25rem 1.5rem;
+  color: white;
+  text-align: center;
+}
+.page-hero h1 { font-size: 1.9rem; font-weight: 900; letter-spacing: -.03em; }
+.page-hero p  { opacity: .82; margin-top: .3rem; font-size: .9rem; }
+
+.menu-layout {
+  max-width: 1080px;
+  margin: 1.75rem auto;
+  padding: 0 1.25rem;
+  display: grid;
+  grid-template-columns: 210px 1fr;
+  gap: 1.75rem;
+}
+
+/* Sidebar */
+.filter-card {
+  background: white;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  padding: 1.1rem;
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 76px;
+}
+.filter-title {
+  font-size: .72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-l);
+  margin-bottom: .85rem;
+}
+.cat-filter-item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .55rem .75rem;
+  border-radius: var(--r-sm);
+  text-decoration: none;
+  color: var(--text);
+  font-size: .875rem;
+  font-weight: 600;
+  transition: all var(--transition);
+  margin-bottom: .2rem;
+}
+.cat-filter-item:hover { background: var(--primary-l); color: var(--primary); }
+.cat-filter-item.active { background: var(--primary-l); color: var(--primary); font-weight: 700; }
+
+.veg-toggle {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .65rem .75rem;
+  background: var(--bg);
+  border-radius: var(--r-sm);
+  margin-top: .85rem;
+  font-size: .875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid var(--border-d);
+  transition: all var(--transition);
+}
+.veg-toggle:hover { border-color: var(--green); background: var(--green-l); color: var(--green); }
+.veg-toggle input { accent-color: var(--green); cursor: pointer; }
+
+/* Items grid */
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+.item-card {
+  background: white;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: all var(--transition);
+}
+.item-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.item-img {
+  height: 155px;
+  background: linear-gradient(135deg, #FFE0C0, #FFD0A0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.4rem;
+  overflow: hidden;
+}
+.item-img img { width: 100%; height: 100%; object-fit: cover; }
+.item-body { padding: 1rem; }
+.item-tags { display: flex; gap: .3rem; margin-bottom: .5rem; flex-wrap: wrap; align-items: center; }
+.item-name { font-size: .92rem; font-weight: 800; margin-bottom: .3rem; letter-spacing: -.01em; }
+.item-name a { text-decoration: none; color: inherit; }
+.item-name a:hover { color: var(--primary); }
+.item-desc {
+  font-size: .78rem;
+  color: var(--text-l);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: .75rem;
+}
+.item-footer { display: flex; align-items: center; justify-content: space-between; }
+.item-price { font-size: 1.1rem; font-weight: 900; color: var(--primary); }
+.item-price::before { content: '₹'; font-size: .82rem; }
+.add-btn {
+  background: linear-gradient(135deg, var(--primary), var(--primary-d));
+  color: white;
+  border: none;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(255,87,34,.28);
+}
+.add-btn:hover { transform: scale(1.12); color: white; }
+
+/* Tag chips */
+.tag-chip {
+  background: var(--bg);
+  color: var(--text-m);
+  font-size: .7rem;
+  font-weight: 700;
+  padding: .18rem .5rem;
+  border-radius: 5px;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-l);
+  background: white;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+}
+.empty-state .icon { font-size: 3.5rem; margin-bottom: .9rem; }
+.empty-state h3 { font-size: 1.1rem; font-weight: 800; color: var(--text); margin-bottom: .35rem; }
+
+@media (max-width: 768px) {
+  .menu-layout { grid-template-columns: 1fr; }
+  .filter-card  { display: none; }
+}
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="page-hero">
+  <h1>🍽️ Our Menu</h1>
+  <p>Crispy, spicy, and utterly irresistible</p>
+</div>
+
+<div class="menu-layout">
+  <!-- Sidebar -->
+  <aside>
+    <div class="filter-card">
+      <div class="filter-title">Categories</div>
+      <a href="{% url 'menu:menu' %}{% if veg_only %}?veg=1{% endif %}" class="cat-filter-item {% if not selected_category %}active{% endif %}">
+        🍽️ All Items
+      </a>
+      {% for cat in categories %}
+        <a href="?category={{ cat.slug }}{% if veg_only %}&veg=1{% endif %}" class="cat-filter-item {% if selected_category == cat.slug %}active{% endif %}">
+          {{ cat.icon|default:"•" }} {{ cat.name }}
+        </a>
+      {% endfor %}
+
+      <form method="get">
+        {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+        <label class="veg-toggle">
+          <input type="checkbox" name="veg" value="1" {% if veg_only %}checked{% endif %} onchange="this.form.submit()">
+          <span class="veg-dot veg"><span class="dot"></span></span>
+          Veg Only
+        </label>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Items -->
+  <div>
+    {% if items %}
+      <div class="items-grid">
+        {% for item in items %}
+        <div class="item-card fu" style="animation-delay:{{ forloop.counter0 }}0ms">
+          <div class="item-img">
+            {% if item.image %}<img src="{{ item.image.url }}" alt="{{ item.name }}">{% else %}🍟{% endif %}
+          </div>
+          <div class="item-body">
+            <div class="item-tags">
+              <span class="veg-dot {% if item.is_veg %}veg{% else %}nonveg{% endif %}"><span class="dot"></span></span>
+              {% if item.is_spicy %}<span class="tag tag-spicy">🌶️</span>{% endif %}
+              {% if item.prep_time_minutes %}<span class="tag-chip">⏱️ {{ item.prep_time_minutes }}m</span>{% endif %}
+            </div>
+            <div class="item-name">
+              <a href="{% url 'menu:item_detail' item.slug %}">{{ item.name }}</a>
+            </div>
+            <div class="item-desc">{{ item.description }}</div>
+            <div class="item-footer">
+              <span class="item-price">{{ item.price }}</span>
+              {% if user.is_authenticated %}
+                <form method="post" action="{% url 'orders:add_to_cart' item.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="add-btn press">+</button>
+                </form>
+              {% else %}
+                <a href="{% url 'accounts:login' %}" class="add-btn press">+</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state fu">
+        <div class="icon">🔍</div>
+        <h3>No items found</h3>
+        <p>Try a different category or remove filters.</p>
+        <a href="{% url 'menu:menu' %}" class="btn btn-outline press" style="margin-top:1rem">Clear Filters</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

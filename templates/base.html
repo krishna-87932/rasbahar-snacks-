@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Rasbahar Snacks{% endblock %}</title>
+  {% load static %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ─── Reset ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    *::-webkit-scrollbar { display: none; }
+
+    /* ─── Design Tokens (from TSX T object) ─── */
+    :root {
+      --primary:    #FF5722;
+      --primary-d:  #E64A19;
+      --primary-l:  #FFF3F0;
+      --primary-ll: #FFF8F5;
+      --accent:     #FF9800;
+      --accent-l:   #FFF8E1;
+      --green:      #2E7D32;
+      --green-l:    #E8F5E9;
+      --green-m:    #43A047;
+      --red:        #C62828;
+      --red-l:      #FFEBEE;
+      --blue:       #1565C0;
+      --blue-l:     #E3F2FD;
+      --bg:         #F5F5F5;
+      --white:      #FFFFFF;
+      --border:     #EFEFEF;
+      --border-d:   #E0E0E0;
+      --text:       #1A1A1A;
+      --text-m:     #555555;
+      --text-l:     #9E9E9E;
+      --shadow:     0 2px 12px rgba(0,0,0,0.08);
+      --shadow-md:  0 4px 24px rgba(0,0,0,0.12);
+      --shadow-lg:  0 8px 40px rgba(0,0,0,0.16);
+      --r:          14px;
+      --r-sm:       10px;
+      --r-lg:       20px;
+      --transition: .18s cubic-bezier(0.22,1,0.36,1);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Animations ─── */
+    @keyframes fadeUp  { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:none } }
+    @keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
+    @keyframes scalePop{ 0%{transform:scale(0.85);opacity:0} 70%{transform:scale(1.04)} 100%{transform:scale(1);opacity:1} }
+    @keyframes slideIn { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:none } }
+    @keyframes spin    { to { transform:rotate(360deg) } }
+
+    .fu  { animation: fadeUp   0.34s cubic-bezier(0.22,1,0.36,1) both }
+    .fi  { animation: fadeIn   0.22s ease both }
+    .pop { animation: scalePop 0.30s cubic-bezier(0.34,1.56,0.64,1) both }
+
+    .d1 { animation-delay:.04s } .d2 { animation-delay:.08s }
+    .d3 { animation-delay:.12s } .d4 { animation-delay:.16s }
+    .d5 { animation-delay:.20s } .d6 { animation-delay:.24s }
+
+    .press { transition: transform .1s, opacity .1s; }
+    .press:active { transform: scale(0.96); opacity: .85; }
+
+    /* ─── Navbar ─── */
+    .navbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    .nav-inner {
+      max-width: 1080px;
+      margin: auto;
+      padding: 0 1.25rem;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+    }
+    .nav-logo {
+      font-size: 1.25rem;
+      font-weight: 900;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      letter-spacing: -.03em;
+    }
+    .nav-logo .logo-icon { font-size: 1.5rem; }
+    .nav-logo .logo-text { color: var(--primary); }
+    .nav-logo .logo-sub  { color: var(--text-m); font-weight: 500; font-size: .75rem; margin-left: .1rem; }
+
+    .nav-links { display: flex; align-items: center; gap: .2rem; margin-left: auto; }
+    .nav-link {
+      padding: .45rem .85rem;
+      border-radius: var(--r-sm);
+      text-decoration: none;
+      color: var(--text-m);
+      font-size: .875rem;
+      font-weight: 600;
+      transition: all var(--transition);
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+    }
+    .nav-link:hover { color: var(--primary); background: var(--primary-l); }
+    .nav-link.active { color: var(--primary); background: var(--primary-l); }
+
+    .nav-cart {
+      position: relative;
+      background: linear-gradient(135deg, var(--primary), var(--primary-d));
+      color: white;
+      border: none;
+      padding: .5rem 1rem;
+      border-radius: var(--r-sm);
+      font-size: .875rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      transition: all var(--transition);
+      box-shadow: 0 2px 10px rgba(255,87,34,.25);
+    }
+    .nav-cart:hover { box-shadow: 0 4px 18px rgba(255,87,34,.38); transform: translateY(-1px); color: white; }
+    .cart-badge {
+      background: white;
+      color: var(--primary);
+      font-size: .68rem;
+      font-weight: 800;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .nav-user-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-d));
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem;
+      font-weight: 800;
+      color: white;
+      text-decoration: none;
+      transition: all var(--transition);
+      box-shadow: 0 2px 8px rgba(255,87,34,.3);
+      overflow: hidden;
+    }
+    .nav-user-btn:hover { transform: scale(1.08); box-shadow: 0 4px 16px rgba(255,87,34,.38); }
+    .nav-user-btn img { width: 100%; height: 100%; object-fit: cover; }
+    .nav-divider { width: 1px; height: 22px; background: var(--border-d); margin: 0 .2rem; }
+
+    /* ─── Messages ─── */
+    .messages-wrap {
+      max-width: 1080px;
+      margin: .75rem auto 0;
+      padding: 0 1.25rem;
+    }
+    .alert {
+      padding: .8rem 1.1rem;
+      border-radius: var(--r-sm);
+      font-size: .875rem;
+      font-weight: 600;
+      margin-bottom: .4rem;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      animation: slideIn .25s ease;
+      border: 1px solid transparent;
+    }
+    .alert-success { background: var(--green-l); color: var(--green); border-color: rgba(46,125,50,.2); }
+    .alert-error   { background: var(--red-l);   color: var(--red);   border-color: rgba(198,40,40,.2); }
+    .alert-warning { background: var(--accent-l); color: #E65100; border-color: rgba(255,152,0,.2); }
+    .alert-info    { background: var(--blue-l);  color: var(--blue);  border-color: rgba(21,101,192,.2); }
+
+    /* ─── Layout ─── */
+    main { flex: 1; }
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 1.25rem; }
+
+    /* ─── Footer ─── */
+    footer {
+      background: var(--text);
+      color: var(--text-l);
+      padding: 2.5rem 1.5rem 1.5rem;
+      margin-top: auto;
+    }
+    .footer-inner {
+      max-width: 1080px;
+      margin: auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 2rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .footer-brand .logo {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: white;
+      margin-bottom: .5rem;
+      letter-spacing: -.02em;
+    }
+    .footer-brand p { font-size: .82rem; line-height: 1.7; }
+    .footer-col h4 { color: white; font-size: .9rem; font-weight: 700; margin-bottom: .75rem; }
+    .footer-col a {
+      display: block;
+      color: var(--text-l);
+      text-decoration: none;
+      font-size: .82rem;
+      margin-bottom: .4rem;
+      transition: color var(--transition);
+    }
+    .footer-col a:hover { color: var(--primary); }
+    .footer-bottom {
+      max-width: 1080px;
+      margin: 1.25rem auto 0;
+      display: flex;
+      justify-content: space-between;
+      font-size: .78rem;
+    }
+
+    /* ─── Form Elements ─── */
+    .form-input {
+      width: 100%;
+      padding: .75rem 1rem;
+      border: 1.5px solid var(--border-d);
+      border-radius: var(--r-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: .9rem;
+      transition: all var(--transition);
+      background: white;
+      color: var(--text);
+      outline: none;
+      box-shadow: var(--shadow);
+    }
+    .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,87,34,.12); }
+    .form-group { margin-bottom: 1.1rem; }
+    .form-label { display: block; font-size: .82rem; font-weight: 700; color: var(--text-m); margin-bottom: .4rem; }
+    .form-error { color: var(--red); font-size: .78rem; margin-top: .3rem; }
+    .errorlist { list-style: none; color: var(--red); font-size: .78rem; margin-top: .3rem; }
+
+    /* ─── Buttons ─── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .45rem;
+      padding: .7rem 1.4rem;
+      border-radius: var(--r-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: all var(--transition);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-d));
+      color: white;
+      box-shadow: 0 2px 12px rgba(255,87,34,.28);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 4px 20px rgba(255,87,34,.4);
+      transform: translateY(-1px);
+      color: white;
+    }
+    .btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border-d); }
+    .btn-secondary:hover { background: var(--border); color: var(--text); }
+    .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+    .btn-outline:hover { background: var(--primary); color: white; }
+    .btn-green {
+      background: var(--green);
+      color: white;
+      box-shadow: 0 2px 12px rgba(46,125,50,.25);
+    }
+    .btn-green:hover { background: var(--green-m); transform: translateY(-1px); color: white; }
+    .btn-full { width: 100%; }
+    .btn-sm { padding: .45rem .9rem; font-size: .82rem; }
+
+    /* ─── Cards ─── */
+    .card {
+      background: white;
+      border-radius: var(--r);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    /* ─── Veg/Non-veg indicator ─── */
+    .veg-dot {
+      width: 17px; height: 17px;
+      border-radius: 3px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .veg-dot.veg   { border: 1.5px solid var(--green); }
+    .veg-dot.nonveg{ border: 1.5px solid var(--red); }
+    .veg-dot .dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+    }
+    .veg-dot.veg .dot   { background: var(--green); }
+    .veg-dot.nonveg .dot{ background: var(--red); }
+
+    /* ─── Tags ─── */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      padding: .2rem .55rem;
+      border-radius: 5px;
+      font-size: .72rem;
+      font-weight: 700;
+    }
+    .tag-veg    { background: var(--green-l); color: var(--green); }
+    .tag-nonveg { background: var(--red-l);   color: var(--red); }
+    .tag-spicy  { background: #FFF3E0; color: #E65100; }
+
+    /* ─── Star badge ─── */
+    .star-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: var(--green);
+      color: white;
+      font-size: .7rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+
+    @media (max-width: 768px) {
+      .footer-inner { grid-template-columns: 1fr; }
+      .nav-links .nav-link span { display: none; }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ─── Navbar ─── -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="{% url 'menu:home' %}" class="nav-logo">
+      <span class="logo-icon">🍱</span>
+      <span class="logo-text">Rasbahar</span>
+    </a>
+
+    <div class="nav-links">
+      <a href="{% url 'menu:home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+        🏠 <span>Home</span>
+      </a>
+      <a href="{% url 'menu:menu' %}" class="nav-link {% if request.resolver_match.url_name == 'menu' %}active{% endif %}">
+        🍽️ <span>Menu</span>
+      </a>
+
+      {% if user.is_authenticated %}
+        <div class="nav-divider"></div>
+        <a href="{% url 'orders:cart' %}" class="nav-cart press">
+          🛒
+          {% with count=user.cart.item_count %}
+            {% if count %}<span class="cart-badge">{{ count }}</span>{% endif %}
+          {% endwith %}
+        </a>
+        <a href="{% url 'orders:order_list' %}" class="nav-link">
+          📦 <span>Orders</span>
+        </a>
+        <a href="{% url 'accounts:profile' %}" class="nav-user-btn" title="{{ user.name }}">
+          {% if user.profile_picture %}
+            <img src="{{ user.profile_picture.url }}" alt="">
+          {% else %}
+            {{ user.name|first|upper }}
+          {% endif %}
+        </a>
+      {% else %}
+        <div class="nav-divider"></div>
+        <a href="{% url 'accounts:login' %}" class="nav-link">Login</a>
+        <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm press">Sign Up</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<!-- ─── Messages ─── -->
+{% if messages %}
+<div class="messages-wrap">
+  {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }} pop">
+      {% if msg.tags == 'success' %}✓{% elif msg.tags == 'error' %}✕{% elif msg.tags == 'warning' %}!{% else %}ℹ{% endif %}
+      {{ msg }}
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ─── Main Content ─── -->
+<main>{% block content %}{% endblock %}</main>
+
+<!-- ─── Footer ─── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="logo">🍱 Rasbahar Snacks</div>
+      <p>Bringing the authentic taste of Indian street food to your doorstep. Fresh, crispy, and made with love since 2020.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Quick Links</h4>
+      <a href="{% url 'menu:home' %}">Home</a>
+      <a href="{% url 'menu:menu' %}">Our Menu</a>
+      {% if user.is_authenticated %}
+        <a href="{% url 'orders:order_list' %}">My Orders</a>
+        <a href="{% url 'accounts:profile' %}">Profile</a>
+      {% else %}
+        <a href="{% url 'accounts:login' %}">Login</a>
+        <a href="{% url 'accounts:register' %}">Register</a>
+      {% endif %}
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <a href="#">📞 +91 98765 43210</a>
+      <a href="#">📧 hello@rasbahar.in</a>
+      <a href="#">📍 Pune, Maharashtra</a>
+      <a href="#">🕐 9AM – 10PM Daily</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 Rasbahar Snacks. All rights reserved.</span>
+    <span>Made with ❤️ in Pune</span>
+  </div>
+</footer>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

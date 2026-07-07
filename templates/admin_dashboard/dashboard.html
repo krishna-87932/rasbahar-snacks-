@@ -1,0 +1,253 @@
+{% extends 'admin_dashboard/base.html' %}
+{% block title %}Dashboard Overview{% endblock %}
+{% block topbar_title %}📊 Dashboard{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'admin:orders_dashboard' %}" class="btn btn-primary btn-sm">View Orders</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Status breakdown responsive */
+  .status-breakdown{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+  @media(max-width:768px){
+    .status-breakdown{grid-template-columns:repeat(3,1fr)}
+    /* Recent orders table: card style on mobile */
+    .orders-table-wrap .dt thead{display:none}
+    .orders-table-wrap .dt tr{display:block;background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);margin-bottom:10px;padding:12px}
+    .orders-table-wrap .dt td{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border:none;font-size:13px;border-bottom:1px solid #f0f0f0}
+    .orders-table-wrap .dt td:last-child{border-bottom:none}
+    .orders-table-wrap .dt td::before{content:attr(data-label);font-size:11px;font-weight:700;color:var(--text-l);text-transform:uppercase;letter-spacing:.4px;margin-right:8px}
+    /* Quick actions grid */
+    .quick-actions{grid-template-columns:1fr 1fr !important}
+  }
+  @media(max-width:480px){
+    .status-breakdown{grid-template-columns:repeat(2,1fr)}
+    .quick-actions{grid-template-columns:1fr !important}
+  }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Stats -->
+<div class="stats-grid fu">
+  <div class="stat-card blue">
+    <p class="stat-label">📦 Total Orders</p>
+    <p class="stat-value">{{ order_stats.total }}</p>
+    <p class="stat-sub">{{ order_stats.today }} today</p>
+  </div>
+  <div class="stat-card orange">
+    <p class="stat-label">⏳ Pending</p>
+    <p class="stat-value">{{ order_stats.pending }}</p>
+    <p class="stat-sub">Awaiting action</p>
+  </div>
+  <div class="stat-card purple">
+    <p class="stat-label">👨‍🍳 Preparing</p>
+    <p class="stat-value">{{ order_stats.preparing }}</p>
+    <p class="stat-sub">Being cooked</p>
+  </div>
+  <div class="stat-card green">
+    <p class="stat-label">✅ Delivered</p>
+    <p class="stat-value">{{ order_stats.delivered }}</p>
+    <p class="stat-sub">Completed</p>
+  </div>
+  <div class="stat-card teal">
+    <p class="stat-label">💰 Total Revenue</p>
+    <p class="stat-value">₹{{ revenue_stats.total }}</p>
+    <p class="stat-sub">From delivered orders</p>
+  </div>
+  <div class="stat-card green">
+    <p class="stat-label">📈 Today's Revenue</p>
+    <p class="stat-value">₹{{ revenue_stats.today }}</p>
+    <p class="stat-sub">Today's deliveries</p>
+  </div>
+  <div class="stat-card blue">
+    <p class="stat-label">📊 Avg Order</p>
+    <p class="stat-value">₹{{ revenue_stats.avg_order }}</p>
+    <p class="stat-sub">Per order average</p>
+  </div>
+  <div class="stat-card purple">
+    <p class="stat-label">👥 Total Users</p>
+    <p class="stat-value">{{ user_stats.total_users }}</p>
+    <p class="stat-sub">{{ user_stats.new_today }} new today</p>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="charts-grid fu d2">
+  <div class="chart-card">
+    <h3 class="chart-title">💰 Revenue — Last 7 Days</h3>
+    <canvas id="revenueChart"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3 class="chart-title">📦 Orders — Last 7 Days</h3>
+    <canvas id="ordersChart"></canvas>
+  </div>
+</div>
+
+<!-- Order Status Breakdown -->
+<div class="section fu d3">
+  <div class="section-header">
+    <h3 class="section-title">📋 Order Status Breakdown</h3>
+  </div>
+  <div class="status-breakdown">
+    <div style="text-align:center;padding:14px;background:var(--orange-l);border-radius:var(--r)">
+      <p style="font-size:24px;font-weight:800;color:#e67e22">{{ order_stats.pending }}</p>
+      <p style="font-size:12px;color:var(--text-m)">Pending</p>
+    </div>
+    <div style="text-align:center;padding:14px;background:var(--blue-l);border-radius:var(--r)">
+      <p style="font-size:24px;font-weight:800;color:var(--blue)">{{ order_stats.confirmed }}</p>
+      <p style="font-size:12px;color:var(--text-m)">Confirmed</p>
+    </div>
+    <div style="text-align:center;padding:14px;background:var(--purple-l);border-radius:var(--r)">
+      <p style="font-size:24px;font-weight:800;color:var(--purple)">{{ order_stats.preparing }}</p>
+      <p style="font-size:12px;color:var(--text-m)">Preparing</p>
+    </div>
+    <div style="text-align:center;padding:14px;background:#e0f7fa;border-radius:var(--r)">
+      <p style="font-size:24px;font-weight:800;color:#0097a7">{{ order_stats.ready }}</p>
+      <p style="font-size:12px;color:var(--text-m)">Ready</p>
+    </div>
+    <div style="text-align:center;padding:14px;background:var(--green-l);border-radius:var(--r)">
+      <p style="font-size:24px;font-weight:800;color:var(--green)">{{ order_stats.delivered }}</p>
+      <p style="font-size:12px;color:var(--text-m)">Delivered</p>
+    </div>
+    <div style="text-align:center;padding:14px;background:var(--red-l);border-radius:var(--r)">
+      <p style="font-size:24px;font-weight:800;color:var(--red)">{{ order_stats.cancelled }}</p>
+      <p style="font-size:12px;color:var(--text-m)">Cancelled</p>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Orders -->
+<div class="section fu d3">
+  <div class="section-header">
+    <h3 class="section-title">📦 Recent Orders</h3>
+    <a href="{% url 'admin:orders_dashboard' %}" class="btn btn-ghost btn-sm">View All →</a>
+  </div>
+  <div class="table-wrap orders-table-wrap">
+    <table class="dt">
+      <thead>
+        <tr><th>Order ID</th><th>Customer</th><th>Status</th><th>Total</th><th>Date</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        {% for order in recent_orders %}
+        <tr>
+          <td data-label="Order"><strong>#{{ order.short_id }}</strong></td>
+          <td data-label="Customer">{{ order.user.name }}</td>
+          <td data-label="Status"><span class="badge badge-{{ order.status }}">{{ order.get_status_display }}</span></td>
+          <td data-label="Total"><strong style="color:var(--green)">₹{{ order.total }}</strong></td>
+          <td data-label="Date">{{ order.created_at|date:"d M, H:i" }}</td>
+          <td data-label="Update">
+            <select class="status-select" onchange="quickUpdateStatus({{ order.id }}, this.value)" data-order="{{ order.id }}">
+              {% for key, val in ORDER_STATUS_CHOICES %}
+              <option value="{{ key }}" {% if order.status == key %}selected{% endif %}>{{ val }}</option>
+              {% endfor %}
+            </select>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="empty-state"><p>No orders yet</p></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Top Selling Items -->
+{% if top_items %}
+<div class="section fu d4">
+  <div class="section-header">
+    <h3 class="section-title">🌟 Top Selling Items</h3>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
+    {% for item in top_items %}
+    <div style="padding:14px;background:var(--bg);border-radius:var(--r);border-left:4px solid var(--accent)">
+      <p style="font-weight:700;margin-bottom:4px;font-size:14px">{{ item.name }}</p>
+      <p style="font-size:26px;font-weight:800;color:var(--accent)">{{ item.sold_count }}</p>
+      <p style="font-size:12px;color:var(--text-l)">Units sold</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="section fu d4">
+  <div class="section-header">
+    <h3 class="section-title">⚡ Quick Actions</h3>
+  </div>
+  <div class="quick-actions" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">
+    <a href="{% url 'admin:orders_dashboard' %}" class="btn btn-primary" style="padding:14px">📦 Manage Orders</a>
+    <a href="{% url 'admin:menu_dashboard' %}" class="btn btn-primary" style="padding:14px">🍽️ Manage Menu</a>
+    <a href="{% url 'admin:categories_dashboard' %}" class="btn btn-primary" style="padding:14px">📁 Categories</a>
+    <a href="{% url 'admin:users_dashboard' %}" class="btn btn-primary" style="padding:14px">👥 Manage Users</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function quickUpdateStatus(orderId, newStatus) {
+  fetch(`/admin/dashboard/orders/${orderId}/status/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrftoken, 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: 'status=' + newStatus
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.success) showToast(d.message);
+    else showToast(d.error, 'error');
+  })
+  .catch(() => showToast('Failed to update status', 'error'));
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const chartOpts = {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true } }
+  };
+
+  const revCtx = document.getElementById('revenueChart')?.getContext('2d');
+  if (revCtx) {
+    new Chart(revCtx, {
+      type: 'bar',
+      data: {
+        labels: [{% for r in daily_revenue %}'{{ r.date }}',{% endfor %}],
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: [{% for r in daily_revenue %}{{ r.value }},{% endfor %}],
+          backgroundColor: 'rgba(102,126,234,.6)',
+          borderColor: 'rgba(102,126,234,1)',
+          borderWidth: 1, borderRadius: 6,
+        }]
+      },
+      options: {
+        ...chartOpts,
+        scales: { y: { beginAtZero: true, ticks: { callback: v => '₹' + v.toLocaleString() } } },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '₹' + ctx.parsed.y.toLocaleString() } } }
+      }
+    });
+  }
+
+  const ordCtx = document.getElementById('ordersChart')?.getContext('2d');
+  if (ordCtx) {
+    new Chart(ordCtx, {
+      type: 'line',
+      data: {
+        labels: [{% for o in daily_orders %}'{{ o.date }}',{% endfor %}],
+        datasets: [{
+          label: 'Orders',
+          data: [{% for o in daily_orders %}{{ o.count }},{% endfor %}],
+          fill: true,
+          backgroundColor: 'rgba(118,75,162,.15)',
+          borderColor: 'rgba(118,75,162,1)',
+          tension: .35, pointRadius: 4,
+        }]
+      },
+      options: { ...chartOpts, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% block title %}Checkout – Rasbahar Snacks{% endblock %}
+{% block extra_css %}
+<style>
+.checkout-page { max-width: 920px; margin: 2rem auto; padding: 0 1.25rem 3rem; }
+.checkout-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: -.02em;
+  margin-bottom: 1.4rem;
+}
+.checkout-layout {
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 1.4rem;
+}
+
+/* Section cards */
+.checkout-card {
+  background: white;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1rem;
+}
+.checkout-card:last-child { margin-bottom: 0; }
+.card-header {
+  font-size: .82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-l);
+  margin-bottom: 1.25rem;
+  padding-bottom: .85rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+/* Payment options */
+.payment-options { display: flex; flex-direction: column; gap: .65rem; }
+.payment-option {
+  border: 1.5px solid var(--border-d);
+  border-radius: var(--r-sm);
+  padding: 1rem 1.1rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+}
+.payment-option:has(input:checked) {
+  border-color: var(--primary);
+  background: var(--primary-ll);
+}
+.payment-option-icon { font-size: 1.6rem; flex-shrink: 0; }
+.payment-option label { cursor: pointer; flex: 1; }
+.payment-option-title { font-size: .92rem; font-weight: 700; display: flex; align-items: center; gap: .5rem; }
+.payment-option-sub { font-size: .78rem; color: var(--text-l); margin-top: .15rem; }
+.payment-option input[type="radio"] { display: none; }
+.radio-circle {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border-d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+.payment-option:has(input:checked) .radio-circle {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+.radio-inner {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: white;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.payment-option:has(input:checked) .radio-inner { opacity: 1; }
+
+.secure-badge {
+  font-size: .68rem;
+  font-weight: 800;
+  background: var(--green);
+  color: white;
+  padding: .15rem .5rem;
+  border-radius: 4px;
+  letter-spacing: .02em;
+}
+
+/* Order summary sidebar */
+.order-summary {
+  background: white;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 1.4rem;
+  position: sticky;
+  top: 76px;
+  height: fit-content;
+}
+.summary-title { font-size: .82rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: var(--text-l); margin-bottom: 1rem; }
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: .84rem;
+  color: var(--text-m);
+  padding: .45rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.summary-item:last-of-type { border-bottom: none; }
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: .88rem;
+  color: var(--text-m);
+  margin-top: .6rem;
+}
+.summary-row.total {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--text);
+  border-top: 1.5px dashed var(--border-d);
+  padding-top: .75rem;
+  margin-top: .6rem;
+}
+.summary-row.total span:last-child { color: var(--primary); }
+.free-tag { color: var(--green); font-weight: 700; }
+
+@media (max-width: 700px) {
+  .checkout-layout { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="checkout-page">
+  <h1 class="checkout-title fu">💳 Checkout</h1>
+
+  <div class="checkout-layout">
+    <div>
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- Delivery Address -->
+        <div class="checkout-card fu d1">
+          <div class="card-header">📍 Delivery Address</div>
+          <div class="form-group">
+            <label class="form-label">Full Address *</label>
+            <textarea
+              name="delivery_address"
+              class="form-input"
+              rows="3"
+              placeholder="House No., Street, Area, City, Pincode"
+              required
+            >{{ user.address }}</textarea>
+          </div>
+          <div style="margin-top:.6rem">
+            <button type="button" class="gps-btn" id="gpsCheckoutBtn" style="padding:.5rem .75rem;font-size:.9rem;display:inline-block">
+              📍 Use My Current Location
+            </button>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Delivery Notes (optional)</label>
+            <input type="text" name="delivery_notes" class="form-input" placeholder="e.g., Ring bell twice, call on arrival">
+          </div>
+        </div>
+
+        <!-- Payment Method -->
+        <div class="checkout-card fu d2">
+          <div class="card-header">💳 Payment Method</div>
+          <div class="payment-options">
+            <div class="payment-option">
+              <div class="payment-option-icon">💵</div>
+              <label>
+                <input type="radio" name="payment_method" value="cod" checked>
+                <div class="payment-option-title">Cash on Delivery</div>
+                <div class="payment-option-sub">Pay when your meal arrives</div>
+              </label>
+              <div class="radio-circle"><div class="radio-inner"></div></div>
+            </div>
+            <div class="payment-option">
+              <div class="payment-option-icon">📱</div>
+              <label>
+                <input type="radio" name="payment_method" value="online">
+                <div class="payment-option-title">
+                  Online Payment
+                  <span class="secure-badge">SECURE</span>
+                </div>
+                <div class="payment-option-sub">UPI · Cards · Net Banking</div>
+              </label>
+              <div class="radio-circle"><div class="radio-inner"></div></div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-green btn-full press" style="margin-top:1.4rem;padding:.88rem;font-size:1rem">
+            Place Order 🎉
+          </button>
+          <div style="text-align:center;margin-top:.6rem;font-size:.75rem;color:var(--text-l)">
+            🔒 Your information is safe and encrypted
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Order Summary -->
+    <div class="order-summary fu d3">
+      <div class="summary-title">Your Order</div>
+      {% for ci in cart.cart_items.all %}
+        <div class="summary-item">
+          <span>{{ ci.menu_item.name }} ×{{ ci.quantity }}</span>
+          <span style="font-weight:600;color:var(--text)">₹{{ ci.subtotal }}</span>
+        </div>
+      {% endfor %}
+      <div class="summary-row"><span>Subtotal</span><span>₹{{ cart.total }}</span></div>
+      <div class="summary-row"><span>Delivery</span><span class="free-tag">FREE</span></div>
+      <div class="summary-row total"><span>Total</span><span>₹{{ cart.total }}</span></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Reverse geocode helper (Nominatim)
+function reverseGeocodeCheckout(lat, lon) {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+  return fetch(url, { headers: { 'Accept': 'application/json' } })
+    .then(r => { if (!r.ok) throw new Error('Geocode error'); return r.json(); })
+    .then(j => j.display_name || '')
+    .catch(() => '');
+}
+
+function fillDeliveryFromGPS() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+    reverseGeocodeCheckout(lat, lon).then(addr => {
+      if (addr) {
+        const ta = document.querySelector('textarea[name="delivery_address"]');
+        if (ta) ta.value = addr;
+      }
+    });
+  }, () => {}, { enableHighAccuracy: true, timeout: 15000 });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const btn = document.getElementById('gpsCheckoutBtn');
+  if (btn) btn.addEventListener('click', fillDeliveryFromGPS);
+
+  // If permission already granted, autofill silently
+  if (navigator.permissions && navigator.permissions.query) {
+    navigator.permissions.query({ name: 'geolocation' }).then(p => {
+      if (p.state === 'granted') fillDeliveryFromGPS();
+    }).catch(() => {});
+  }
+});
+</script>
+{% endblock %}

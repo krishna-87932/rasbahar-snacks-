@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Register – Rasbahar Snacks{% endblock %}
+{% block extra_css %}
+<style>
+.auth-page {
+  min-height: calc(100vh - 61px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: var(--bg);
+}
+.auth-wrap { width: 100%; max-width: 420px; }
+.auth-hero {
+  background: linear-gradient(135deg, #FF5722, #E64A19);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  padding: 2.5rem 2rem 2rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.auth-hero::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 160px; height: 160px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+}
+.auth-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -30px; left: -30px;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.07);
+}
+.auth-icon { font-size: 3rem; margin-bottom: .75rem; position: relative; z-index: 1; }
+.auth-hero h1 {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: white;
+  letter-spacing: -.02em;
+  position: relative;
+  z-index: 1;
+}
+.auth-hero p {
+  color: rgba(255,255,255,.8);
+  font-size: .88rem;
+  margin-top: .35rem;
+  position: relative;
+  z-index: 1;
+}
+.auth-card {
+  background: white;
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  padding: 2rem 2rem 1.75rem;
+  border: 1px solid var(--border);
+  border-top: none;
+  box-shadow: var(--shadow-md);
+}
+.auth-footer {
+  text-align: center;
+  margin-top: 1.4rem;
+  font-size: .85rem;
+  color: var(--text-l);
+}
+.auth-footer a { color: var(--primary); font-weight: 700; text-decoration: none; }
+.auth-footer a:hover { text-decoration: underline; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-wrap fu">
+    <div class="auth-hero">
+      <div class="auth-icon">🍱</div>
+      <h1>Create Account</h1>
+      <p>Join Rasbahar and order your favourite snacks!</p>
+    </div>
+    <div class="auth-card">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="form-group">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+        {% endfor %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-error">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary btn-full press" style="padding:.85rem;margin-top:.25rem">Continue →</button>
+      </form>
+      <div class="auth-footer">Already have an account? <a href="{% url 'accounts:login' %}">Login here</a></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends 'admin_dashboard/base.html' %}
+{% block title %}Users Management{% endblock %}
+{% block topbar_title %}👥 Users{% endblock %}
+{% block topbar_actions %}
+<form class="search-box" method="get" action="">
+  {% if role_filter %}<input type="hidden" name="role" value="{{ role_filter }}">{% endif %}
+  <input type="text" name="q" value="{{ search }}" placeholder="Search users...">
+</form>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  @media(max-width:768px){
+    .users-dt thead{display:none}
+    .users-dt tr{display:block;background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);margin-bottom:10px;padding:12px 14px}
+    .users-dt td{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border:none;font-size:13px;border-bottom:1px solid #f4f4f4}
+    .users-dt td:last-child{border-bottom:none}
+    .users-dt td::before{content:attr(data-label);font-size:11px;font-weight:700;color:var(--text-l);text-transform:uppercase;letter-spacing:.4px;flex-shrink:0;margin-right:10px}
+    /* User detail modal */
+    .user-detail-grid{grid-template-columns:1fr !important}
+    .user-stats-grid{grid-template-columns:1fr 1fr !important}
+  }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Stats -->
+<div class="stats-grid fu">
+  <div class="stat-card blue"><p class="stat-label">Total Users</p><p class="stat-value">{{ stats.total }}</p></div>
+  <div class="stat-card green"><p class="stat-label">Active</p><p class="stat-value">{{ stats.active }}</p></div>
+  <div class="stat-card red"><p class="stat-label">Inactive</p><p class="stat-value">{{ stats.inactive }}</p></div>
+  <div class="stat-card purple"><p class="stat-label">Staff</p><p class="stat-value">{{ stats.staff }}</p></div>
+</div>
+
+<!-- Users Table -->
+<div class="section fu d1">
+  <div class="section-header">
+    <h3 class="section-title">All Users</h3>
+    <div class="filter-tabs">
+      <a href="{% url 'admin:users_dashboard' %}{% if search %}?q={{ search }}{% endif %}" class="filter-tab {% if not role_filter %}active{% endif %}">All <span class="count">({{ stats.total }})</span></a>
+      <a href="?role=active{% if search %}&q={{ search }}{% endif %}" class="filter-tab {% if role_filter == 'active' %}active{% endif %}">Active</a>
+      <a href="?role=inactive{% if search %}&q={{ search }}{% endif %}" class="filter-tab {% if role_filter == 'inactive' %}active{% endif %}">Inactive</a>
+      <a href="?role=staff{% if search %}&q={{ search }}{% endif %}" class="filter-tab {% if role_filter == 'staff' %}active{% endif %}">Staff</a>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="dt users-dt">
+      <thead>
+        <tr><th>Name</th><th>Contact</th><th>Orders</th><th>Active</th><th>Staff</th><th>Joined</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr id="user-row-{{ u.id }}">
+          <td data-label="Name">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:34px;height:34px;border-radius:50%;background:var(--accent-grad);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0">
+                {% if u.profile_picture %}
+                <img src="{{ u.profile_picture.url }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">
+                {% else %}
+                {{ u.name|first|upper }}
+                {% endif %}
+              </div>
+              <strong>{{ u.name }}</strong>
+            </div>
+          </td>
+          <td data-label="Contact">
+            <div>
+              {{ u.phone_number }}<br>
+              <small style="color:var(--text-l)">{{ u.email }}</small>
+            </div>
+          </td>
+          <td data-label="Orders"><span class="badge" style="background:var(--blue-l);color:var(--blue)">{{ u.order_count }}</span></td>
+          <td data-label="Active">
+            <label class="toggle">
+              <input type="checkbox" {% if u.is_active %}checked{% endif %} onchange="toggleUser({{ u.id }},'is_active')">
+              <span class="slider"></span>
+            </label>
+          </td>
+          <td data-label="Staff">
+            <label class="toggle">
+              <input type="checkbox" {% if u.is_staff %}checked{% endif %} onchange="toggleUser({{ u.id }},'is_staff')">
+              <span class="slider"></span>
+            </label>
+          </td>
+          <td data-label="Joined" style="font-size:13px">{{ u.date_joined|date:"d M Y" }}</td>
+          <td data-label="View">
+            <button class="btn btn-sm btn-secondary" onclick="viewUser({{ u.id }})">👁️ View</button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="empty-state"><div class="icon">👥</div><p>No users found</p></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- User Detail Modal -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2 id="userModalTitle">User Details</h2>
+      <button class="modal-close" onclick="closeModal('userModal')">✕</button>
+    </div>
+    <div class="modal-body" id="userModalBody">
+      <div style="text-align:center;padding:30px;color:var(--text-l)">Loading...</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleUser(id, field) {
+  fetch(`/admin/dashboard/users/${id}/toggle/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrftoken, 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: 'field=' + field
+  }).then(r=>r.json()).then(d => {
+    if(d.success) showToast(`User ${field.replace('is_','')} status toggled`);
+    else showToast(d.error,'error');
+  });
+}
+
+function viewUser(id) {
+  const body = document.getElementById('userModalBody');
+  body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-l)">Loading...</div>';
+  openModal('userModal');
+
+  fetch(`/admin/dashboard/users/${id}/detail/`)
+    .then(r=>r.json())
+    .then(d => {
+      document.getElementById('userModalTitle').textContent = d.name;
+      let ordersHtml = d.recent_orders.length ? d.recent_orders.map(o =>
+        `<tr><td>#${o.short_id}</td><td>${o.status}</td><td>₹${o.total}</td><td>${o.date}</td></tr>`
+      ).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--text-l);padding:16px">No orders</td></tr>';
+
+      body.innerHTML = `
+        <div class="user-detail-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+          <div>
+            <p style="font-size:11px;color:var(--text-l);text-transform:uppercase;font-weight:700;margin-bottom:6px">Contact</p>
+            <p style="font-weight:600">📞 ${d.phone_number}</p>
+            <p style="font-size:13px;color:var(--text-m)">📧 ${d.email}</p>
+            ${d.address ? `<p style="font-size:13px;color:var(--text-m);margin-top:6px">📍 ${d.address}</p>` : ''}
+          </div>
+          <div>
+            <p style="font-size:11px;color:var(--text-l);text-transform:uppercase;font-weight:700;margin-bottom:6px">Account</p>
+            <p>${d.is_active ? '<span class="badge badge-active">Active</span>' : '<span class="badge badge-inactive">Inactive</span>'} ${d.is_staff ? '<span class="badge" style="background:var(--blue-l);color:var(--blue)">Staff</span>' : ''} ${d.is_superuser ? '<span class="badge" style="background:var(--purple-l);color:var(--purple)">Superuser</span>' : ''}</p>
+            <p style="font-size:13px;color:var(--text-m);margin-top:6px">Joined: ${d.date_joined}</p>
+            <p style="font-size:13px;color:var(--text-m)">Last login: ${d.last_login}</p>
+          </div>
+        </div>
+        <div class="user-stats-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+          <div style="padding:14px;background:var(--bg);border-radius:var(--r);text-align:center">
+            <p style="font-size:24px;font-weight:800;color:var(--accent)">${d.total_orders}</p>
+            <p style="font-size:12px;color:var(--text-l)">Total Orders</p>
+          </div>
+          <div style="padding:14px;background:var(--bg);border-radius:var(--r);text-align:center">
+            <p style="font-size:24px;font-weight:800;color:var(--green)">₹${d.total_spent}</p>
+            <p style="font-size:12px;color:var(--text-l)">Total Spent</p>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--text-l);text-transform:uppercase;font-weight:700;margin-bottom:8px">Recent Orders</p>
+        <div style="overflow-x:auto">
+          <table class="dt" style="min-width:280px">
+            <thead><tr><th>Order</th><th>Status</th><th>Total</th><th>Date</th></tr></thead>
+            <tbody>${ordersHtml}</tbody>
+          </table>
+        </div>
+      `;
+    });
+}
+</script>
+{% endblock %}

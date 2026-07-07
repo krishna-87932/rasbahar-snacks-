@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+{% block title %}Rasbahar Snacks – Fresh Indian Street Food{% endblock %}
+{% block extra_css %}
+<style>
+/* ─── Hero ─── */
+.hero {
+  background: linear-gradient(135deg, #FF5722 0%, #E64A19 50%, #FF9800 100%);
+  padding: 4.5rem 1.5rem 3.5rem;
+  text-align: center;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -60%; left: -30%;
+  width: 180%; height: 200%;
+  background: radial-gradient(circle at 60% 40%, rgba(255,255,255,.07) 0%, transparent 55%);
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  background: rgba(255,255,255,.2);
+  padding: .35rem 1rem;
+  border-radius: 20px;
+  font-size: .8rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  letter-spacing: .03em;
+}
+.hero h1 {
+  font-size: clamp(2.1rem,5vw,3.4rem);
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -.03em;
+  margin-bottom: 1rem;
+}
+.hero h1 .accent { color: rgba(255,255,255,.75); }
+.hero p {
+  font-size: 1rem;
+  opacity: .88;
+  max-width: 480px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+}
+.hero-actions { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
+.btn-white { background: white; color: var(--primary); font-weight: 800; }
+.btn-white:hover { background: #fff3f0; color: var(--primary-d); transform: translateY(-1px); }
+.btn-ghost { background: rgba(255,255,255,.15); color: white; border: 1.5px solid rgba(255,255,255,.45); }
+.btn-ghost:hover { background: rgba(255,255,255,.25); color: white; }
+
+/* ─── Stats ─── */
+.stats {
+  background: white;
+  border-bottom: 1px solid var(--border);
+}
+.stats-inner {
+  max-width: 1080px;
+  margin: auto;
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  text-align: center;
+}
+.stat-num {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--primary);
+  letter-spacing: -.03em;
+}
+.stat-label { font-size: .8rem; color: var(--text-l); margin-top: .15rem; font-weight: 500; }
+
+/* ─── Section ─── */
+.section { padding: 3.5rem 1.5rem; }
+.section-header { text-align: center; margin-bottom: 2.5rem; }
+.section-badge {
+  display: inline-block;
+  background: var(--primary-l);
+  color: var(--primary);
+  padding: .28rem .85rem;
+  border-radius: 20px;
+  font-size: .72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: .75rem;
+}
+.section-header h2 {
+  font-size: clamp(1.5rem,3vw,2rem);
+  font-weight: 900;
+  letter-spacing: -.02em;
+}
+.section-header p { color: var(--text-l); margin-top: .4rem; font-size: .9rem; }
+
+/* ─── Category grid ─── */
+.cat-grid {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: .75rem;
+}
+.cat-card {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 1.4rem .75rem;
+  text-align: center;
+  text-decoration: none;
+  color: var(--text);
+  transition: all var(--transition);
+  box-shadow: var(--shadow);
+}
+.cat-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 22px rgba(255,87,34,.14);
+  color: var(--primary);
+}
+.cat-icon { font-size: 2.2rem; margin-bottom: .5rem; }
+.cat-name { font-size: .85rem; font-weight: 700; }
+
+/* ─── Item cards ─── */
+.items-grid {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 1.1rem;
+}
+.item-card {
+  background: white;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: all var(--transition);
+}
+.item-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.item-img {
+  height: 170px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  position: relative;
+  overflow: hidden;
+}
+.item-img img { width: 100%; height: 100%; object-fit: cover; }
+.item-featured-badge {
+  position: absolute;
+  top: .6rem; left: .6rem;
+  background: var(--primary);
+  color: white;
+  font-size: .65rem;
+  font-weight: 800;
+  padding: .2rem .55rem;
+  border-radius: 6px;
+  letter-spacing: .02em;
+}
+.item-body { padding: 1.1rem; }
+.item-tags { display: flex; gap: .35rem; margin-bottom: .5rem; flex-wrap: wrap; align-items: center; }
+.item-name { font-size: .95rem; font-weight: 800; margin-bottom: .3rem; letter-spacing: -.01em; }
+.item-desc {
+  font-size: .8rem;
+  color: var(--text-l);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.item-footer { display: flex; align-items: center; justify-content: space-between; margin-top: .9rem; }
+.item-price { font-size: 1.15rem; font-weight: 900; color: var(--primary); letter-spacing: -.02em; }
+.item-price::before { content: '₹'; font-size: .85rem; font-weight: 700; }
+.add-btn {
+  background: linear-gradient(135deg, var(--primary), var(--primary-d));
+  color: white;
+  border: none;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(255,87,34,.3);
+  flex-shrink: 0;
+}
+.add-btn:hover { transform: scale(1.12); box-shadow: 0 4px 14px rgba(255,87,34,.4); color: white; }
+
+/* ─── Why cards ─── */
+.why-grid {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 1.25rem;
+  text-align: center;
+}
+.why-card { padding: 1.75rem 1rem; background: white; border: 1px solid var(--border); border-radius: var(--r); }
+.why-icon { font-size: 2.2rem; margin-bottom: .9rem; }
+.why-title { font-weight: 800; font-size: .95rem; margin-bottom: .35rem; }
+.why-desc { font-size: .82rem; color: var(--text-l); line-height: 1.55; }
+
+/* ─── CTA ─── */
+.cta {
+  background: var(--text);
+  color: white;
+  padding: 4.5rem 1.5rem;
+  text-align: center;
+}
+.cta h2 { font-size: 2rem; font-weight: 900; margin-bottom: .75rem; letter-spacing: -.03em; }
+.cta p { opacity: .65; margin-bottom: 2rem; font-size: .95rem; }
+
+@media (max-width: 768px) {
+  .stats-inner { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<section class="hero fu">
+  <div class="hero-badge">🔥 Fresh & Hot — Order Now!</div>
+  <h1>Authentic Indian<br>Street Snacks<br><span class="accent">Delivered Fast</span></h1>
+  <p>From crispy samosas to masala chai — taste the streets of Pune at your doorstep.</p>
+  <div class="hero-actions">
+    <a href="{% url 'menu:menu' %}" class="btn btn-white press">🍽️ View Menu</a>
+    {% if not user.is_authenticated %}
+      <a href="{% url 'accounts:register' %}" class="btn btn-ghost press">Join Free →</a>
+    {% else %}
+      <a href="{% url 'orders:cart' %}" class="btn btn-ghost press">🛒 My Cart</a>
+    {% endif %}
+  </div>
+</section>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stats-inner">
+    <div class="fu d1"><div class="stat-num">50+</div><div class="stat-label">Menu Items</div></div>
+    <div class="fu d2"><div class="stat-num">10K+</div><div class="stat-label">Happy Customers</div></div>
+    <div class="fu d3"><div class="stat-num">4.8★</div><div class="stat-label">Average Rating</div></div>
+    <div class="fu d4"><div class="stat-num">30min</div><div class="stat-label">Avg Delivery</div></div>
+  </div>
+</div>
+
+<!-- Categories -->
+{% if categories %}
+<section class="section" style="background:white;border-bottom:1px solid var(--border)">
+  <div class="section-header fu">
+    <div class="section-badge">🏷️ Browse</div>
+    <h2>What Are You Craving?</h2>
+    <p>Pick a category and explore our snacks</p>
+  </div>
+  <div class="cat-grid">
+    {% for cat in categories %}
+    <a href="{% url 'menu:menu' %}?category={{ cat.slug }}" class="cat-card fu" style="animation-delay:{{ forloop.counter0 }}00ms">
+      <div class="cat-icon">{{ cat.icon|default:"🍽️" }}</div>
+      <div class="cat-name">{{ cat.name }}</div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- Featured Items -->
+{% if featured_items %}
+<section class="section">
+  <div class="section-header fu">
+    <div class="section-badge">⭐ Featured</div>
+    <h2>Our Bestsellers</h2>
+    <p>The snacks everyone's raving about</p>
+  </div>
+  <div class="items-grid">
+    {% for item in featured_items %}
+    <div class="item-card fu" style="animation-delay:{{ forloop.counter0 }}0ms">
+      <div class="item-img" style="background:linear-gradient(135deg,#FFE0C0,#FFD0A0)">
+        {% if item.image %}<img src="{{ item.image.url }}" alt="{{ item.name }}">{% else %}🍟{% endif %}
+        <span class="item-featured-badge">⭐ Featured</span>
+      </div>
+      <div class="item-body">
+        <div class="item-tags">
+          <span class="veg-dot {% if item.is_veg %}veg{% else %}nonveg{% endif %}"><span class="dot"></span></span>
+          {% if item.is_spicy %}<span class="tag tag-spicy">🌶️ Spicy</span>{% endif %}
+        </div>
+        <div class="item-name">{{ item.name }}</div>
+        <div class="item-desc">{{ item.description }}</div>
+        <div class="item-footer">
+          <span class="item-price">{{ item.price }}</span>
+          {% if user.is_authenticated %}
+            <form method="post" action="{% url 'orders:add_to_cart' item.pk %}">{% csrf_token %}<button type="submit" class="add-btn press">+</button></form>
+          {% else %}
+            <a href="{% url 'accounts:login' %}" class="add-btn press">+</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <div style="text-align:center;margin-top:2rem" class="fu">
+    <a href="{% url 'menu:menu' %}" class="btn btn-outline press">See All Items →</a>
+  </div>
+</section>
+{% endif %}
+
+<!-- Why Us -->
+<section class="section" style="background:white;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="section-header fu">
+    <div class="section-badge">💪 Why Rasbahar</div>
+    <h2>Made with Love & Spice</h2>
+  </div>
+  <div class="why-grid">
+    <div class="why-card fu d1"><div class="why-icon">🌿</div><div class="why-title">Fresh Ingredients</div><div class="why-desc">Sourced daily from local vendors. No preservatives, ever.</div></div>
+    <div class="why-card fu d2"><div class="why-icon">⚡</div><div class="why-title">Fast Delivery</div><div class="why-desc">Hot food at your door in under 30 minutes.</div></div>
+    <div class="why-card fu d3"><div class="why-icon">💰</div><div class="why-title">Pocket Friendly</div><div class="why-desc">Premium street food at street-stall prices.</div></div>
+    <div class="why-card fu d4"><div class="why-icon">🛡️</div><div class="why-title">Hygienic Kitchen</div><div class="why-desc">FSSAI certified. Prepared with care and cleanliness.</div></div>
+  </div>
+</section>
+
+<!-- CTA -->
+{% if not user.is_authenticated %}
+<section class="cta">
+  <h2 class="fu">Hungry? Let's Fix That! 🤤</h2>
+  <p class="fu d1">Sign up in seconds and get your first order delivered hot.</p>
+  <a href="{% url 'accounts:register' %}" class="btn btn-primary press fu d2" style="font-size:1rem;padding:.9rem 2.2rem">Get Started →</a>
+</section>
+{% endif %}
+
+{% endblock %}

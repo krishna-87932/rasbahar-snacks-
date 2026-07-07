@@ -1,0 +1,198 @@
+{% extends 'admin_dashboard/base.html' %}
+{% block title %}Orders Management{% endblock %}
+{% block topbar_title %}📦 Orders{% endblock %}
+{% block topbar_actions %}
+<form class="search-box" method="get" action="">
+  {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+  <input type="text" name="q" value="{{ search }}" placeholder="Search orders...">
+</form>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  @media(max-width:768px){
+    /* Orders table → card view */
+    .orders-dt thead{display:none}
+    .orders-dt tr{display:block;background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);margin-bottom:10px;padding:12px 14px}
+    .orders-dt td{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border:none;font-size:13px;border-bottom:1px solid #f4f4f4}
+    .orders-dt td:last-child{border-bottom:none}
+    .orders-dt td::before{content:attr(data-label);font-size:11px;font-weight:700;color:var(--text-l);text-transform:uppercase;letter-spacing:.4px;flex-shrink:0;margin-right:10px}
+    /* Mobile search bar below topbar */
+    .mobile-search{display:block;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border)}
+    .mobile-search input{width:100%;padding:9px 14px 9px 36px;border:1.5px solid var(--border);border-radius:var(--r);font-size:14px;font-family:inherit;outline:none;background:var(--bg)}
+    .mobile-search{position:relative}
+    .mobile-search::before{content:'🔍';position:absolute;left:24px;top:50%;transform:translateY(-50%);font-size:14px}
+    /* Order detail modal grid */
+    .order-detail-grid{grid-template-columns:1fr !important}
+  }
+  @media(min-width:769px){
+    .mobile-search{display:none}
+  }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Mobile search (shown only on mobile, topbar search hidden) -->
+<div class="mobile-search" style="display:none;margin:-14px -14px 14px -14px;border-radius:0">
+  <form method="get" action="">
+    {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+    <input type="text" name="q" value="{{ search }}" placeholder="Search order ID, name, phone...">
+  </form>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid fu">
+  <div class="stat-card blue"><p class="stat-label">Total</p><p class="stat-value">{{ stats.total }}</p></div>
+  <div class="stat-card orange"><p class="stat-label">Pending</p><p class="stat-value">{{ stats.pending }}</p></div>
+  <div class="stat-card purple"><p class="stat-label">Preparing</p><p class="stat-value">{{ stats.preparing }}</p></div>
+  <div class="stat-card teal"><p class="stat-label">Ready</p><p class="stat-value">{{ stats.ready }}</p></div>
+  <div class="stat-card blue"><p class="stat-label">Out</p><p class="stat-value">{{ stats.out_for_delivery }}</p></div>
+  <div class="stat-card green"><p class="stat-label">Delivered</p><p class="stat-value">{{ stats.delivered }}</p></div>
+  <div class="stat-card red"><p class="stat-label">Cancelled</p><p class="stat-value">{{ stats.cancelled }}</p></div>
+</div>
+
+<!-- Orders Table -->
+<div class="section fu d1">
+  <div class="section-header">
+    <h3 class="section-title">All Orders</h3>
+    <div class="filter-tabs">
+      <a href="{% url 'admin:orders_dashboard' %}" class="filter-tab {% if not status_filter %}active{% endif %}">All <span class="count">({{ stats.total }})</span></a>
+      {% for key, val in ORDER_STATUS_CHOICES %}
+      <a href="?status={{ key }}{% if search %}&q={{ search }}{% endif %}" class="filter-tab {% if status_filter == key %}active{% endif %}">{{ val }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="dt orders-dt">
+      <thead>
+        <tr>
+          <th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Date</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr id="order-row-{{ order.id }}">
+          <td data-label="Order"><strong style="color:var(--accent)">#{{ order.short_id }}</strong></td>
+          <td data-label="Customer">
+            <div>
+              <strong>{{ order.user.name }}</strong>
+              <br><small style="color:var(--text-l)">{{ order.user.phone_number }}</small>
+            </div>
+          </td>
+          <td data-label="Items">{{ order.order_items.count }} items</td>
+          <td data-label="Total"><strong style="color:var(--green)">₹{{ order.total }}</strong></td>
+          <td data-label="Payment">{{ order.get_payment_method_display }}</td>
+          <td data-label="Date" style="font-size:13px">{{ order.created_at|date:"d M Y, H:i" }}</td>
+          <td data-label="Status">
+            <select class="status-select" onchange="updateOrderStatus({{ order.id }}, this.value, this)" id="status-{{ order.id }}">
+              {% for key, val in ORDER_STATUS_CHOICES %}
+              <option value="{{ key }}" {% if order.status == key %}selected{% endif %}>{{ val }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td data-label="View">
+            <button class="btn btn-sm btn-secondary" onclick="viewOrderDetail({{ order.id }})">👁️ View</button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="empty-state"><div class="icon">📦</div><p>No orders found</p></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2 id="orderModalTitle">Order Details</h2>
+      <button class="modal-close" onclick="closeModal('orderModal')">✕</button>
+    </div>
+    <div class="modal-body" id="orderModalBody">
+      <div style="text-align:center;padding:30px;color:var(--text-l)">Loading...</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* Show mobile search on small screens */
+document.addEventListener('DOMContentLoaded', () => {
+  const ms = document.querySelector('.mobile-search');
+  if (ms && window.innerWidth <= 480) ms.style.display = 'block';
+  window.addEventListener('resize', () => {
+    if (ms) ms.style.display = window.innerWidth <= 480 ? 'block' : 'none';
+  });
+});
+
+function updateOrderStatus(orderId, newStatus, selectEl) {
+  fetch(`/admin/dashboard/orders/${orderId}/status/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrftoken, 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: 'status=' + newStatus
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.success) showToast(d.message);
+    else showToast(d.error, 'error');
+  })
+  .catch(() => showToast('Failed to update', 'error'));
+}
+
+function viewOrderDetail(orderId) {
+  const body = document.getElementById('orderModalBody');
+  body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-l)">Loading...</div>';
+  openModal('orderModal');
+
+  fetch(`/admin/dashboard/orders/${orderId}/detail/`)
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('orderModalTitle').textContent = 'Order #' + d.short_id;
+      let itemsHtml = d.items.map(i =>
+        `<tr><td>${i.name}</td><td>₹${i.price}</td><td>${i.quantity}</td><td><strong>₹${i.subtotal}</strong></td></tr>`
+      ).join('');
+
+      body.innerHTML = `
+        <div class="order-detail-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+          <div>
+            <p style="font-size:11px;color:var(--text-l);text-transform:uppercase;font-weight:700;margin-bottom:4px">Customer</p>
+            <p style="font-weight:700">${d.customer_name}</p>
+            <p style="font-size:13px;color:var(--text-m)">${d.customer_phone}</p>
+            <p style="font-size:13px;color:var(--text-m)">${d.customer_email}</p>
+          </div>
+          <div>
+            <p style="font-size:11px;color:var(--text-l);text-transform:uppercase;font-weight:700;margin-bottom:4px">Order Info</p>
+            <p><span class="badge badge-${d.status}">${d.status_display}</span></p>
+            <p style="font-size:13px;color:var(--text-m);margin-top:6px">${d.payment_method} ${d.payment_status ? '✅ Paid' : '⏳ Unpaid'}</p>
+            <p style="font-size:13px;color:var(--text-m)">${d.created_at}</p>
+          </div>
+        </div>
+        <div style="margin-bottom:18px">
+          <p style="font-size:11px;color:var(--text-l);text-transform:uppercase;font-weight:700;margin-bottom:6px">Delivery Address</p>
+          <p style="font-size:14px;background:var(--bg);padding:10px 12px;border-radius:var(--r)">${d.delivery_address}</p>
+          ${d.delivery_notes ? `<p style="font-size:13px;color:var(--text-m);margin-top:6px">📝 ${d.delivery_notes}</p>` : ''}
+        </div>
+        <p style="font-size:11px;color:var(--text-l);text-transform:uppercase;font-weight:700;margin-bottom:8px">Order Items</p>
+        <div style="overflow-x:auto;margin-bottom:14px">
+          <table class="dt" style="min-width:300px">
+            <thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>Subtotal</th></tr></thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+        </div>
+        <div style="background:var(--bg);padding:14px;border-radius:var(--r);text-align:right">
+          <p style="font-size:13px;color:var(--text-m)">Subtotal: ₹${d.subtotal}</p>
+          <p style="font-size:13px;color:var(--text-m)">Delivery: ₹${d.delivery_charge}</p>
+          ${parseFloat(d.discount) > 0 ? `<p style="font-size:13px;color:var(--green)">Discount: -₹${d.discount}</p>` : ''}
+          <p style="font-size:18px;font-weight:800;color:var(--green);margin-top:8px;border-top:1px solid var(--border);padding-top:8px">Total: ₹${d.total}</p>
+        </div>
+      `;
+    })
+    .catch(() => {
+      body.innerHTML = '<div class="empty-state"><p>Failed to load order details</p></div>';
+    });
+}
+</script>
+{% endblock %}

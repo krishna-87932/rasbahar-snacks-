@@ -1,0 +1,174 @@
+{% extends 'admin_dashboard/base.html' %}
+{% block title %}Categories{% endblock %}
+{% block topbar_title %}📁 Categories{% endblock %}
+{% block topbar_actions %}
+<button class="btn btn-primary btn-sm" onclick="openAddCat()">+ Add Category</button>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  @media(max-width:600px){
+    .cat-grid{grid-template-columns:1fr}
+  }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Category Cards -->
+<div class="section fu">
+  <div class="section-header">
+    <h3 class="section-title">All Categories</h3>
+    <p style="color:var(--text-l);font-size:13px">{{ categories|length }} categories</p>
+  </div>
+
+  <div class="cat-grid">
+    {% for cat in categories %}
+    <div class="cat-card" id="cat-card-{{ cat.id }}" style="background:var(--bg);border-radius:var(--r-lg);padding:18px;border:1.5px solid var(--border);transition:var(--tr)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <div style="width:48px;height:48px;background:var(--bg2);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:var(--shadow);flex-shrink:0">
+          {% if cat.icon %}{{ cat.icon }}{% else %}📁{% endif %}
+        </div>
+        <div style="flex:1;min-width:0">
+          <p style="font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ cat.name }}</p>
+          <p style="font-size:12px;color:var(--text-l)">{{ cat.item_count }} items · Order: {{ cat.sort_order }}</p>
+        </div>
+        {% if cat.is_active %}
+        <span class="badge badge-active" style="font-size:11px;flex-shrink:0">Active</span>
+        {% else %}
+        <span class="badge badge-inactive" style="font-size:11px;flex-shrink:0">Inactive</span>
+        {% endif %}
+      </div>
+      {% if cat.description %}
+      <p style="font-size:13px;color:var(--text-m);margin-bottom:12px">{{ cat.description|truncatewords:15 }}</p>
+      {% endif %}
+      <div class="btn-group">
+        <button class="btn btn-sm btn-secondary" onclick="openEditCat({{ cat.id }})">✏️ Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="confirmDeleteCat({{ cat.id }},'{{ cat.name|escapejs }}')">🗑️ Delete</button>
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty-state" style="grid-column:1/-1">
+      <div class="icon">📁</div>
+      <p>No categories yet. Create your first category!</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="catModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="catModalTitle">Add Category</h2>
+      <button class="modal-close" onclick="closeModal('catModal')">✕</button>
+    </div>
+    <form id="catForm" enctype="multipart/form-data">
+      <div class="modal-body">
+        <input type="hidden" id="catId" value="">
+        <div class="form-group">
+          <label class="form-label">Category Name *</label>
+          <input type="text" class="form-input" id="fc-name" name="name" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Icon (Emoji)</label>
+            <input type="text" class="form-input" id="fc-icon" name="icon" placeholder="e.g. 🍔">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sort Order</label>
+            <input type="number" class="form-input" id="fc-sort" name="sort_order" value="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="fc-desc" name="description" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Image</label>
+          <input type="file" class="form-input" id="fc-image" name="image" accept="image/*">
+        </div>
+        <label class="form-check"><input type="checkbox" id="fc-active" name="is_active" checked> Active</label>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('catModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="catSubmitBtn">Add Category</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-overlay" id="deleteCatModal">
+  <div class="modal" style="max-width:100%">
+    <div class="modal-header"><h2>Confirm Delete</h2><button class="modal-close" onclick="closeModal('deleteCatModal')">✕</button></div>
+    <div class="modal-body"><p>Are you sure you want to delete <strong id="deleteCatName"></strong>?</p></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('deleteCatModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="doDeleteCat()">Delete</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let deleteCatId = null;
+
+function openAddCat() {
+  document.getElementById('catModalTitle').textContent = 'Add Category';
+  document.getElementById('catSubmitBtn').textContent = 'Add Category';
+  document.getElementById('catId').value = '';
+  document.getElementById('catForm').reset();
+  document.getElementById('fc-active').checked = true;
+  openModal('catModal');
+}
+
+function openEditCat(id) {
+  document.getElementById('catModalTitle').textContent = 'Edit Category';
+  document.getElementById('catSubmitBtn').textContent = 'Save Changes';
+  document.getElementById('catId').value = id;
+  fetch(`/admin/dashboard/categories/${id}/detail/`)
+    .then(r=>r.json())
+    .then(d => {
+      document.getElementById('fc-name').value = d.name;
+      document.getElementById('fc-icon').value = d.icon;
+      document.getElementById('fc-sort').value = d.sort_order;
+      document.getElementById('fc-desc').value = d.description;
+      document.getElementById('fc-active').checked = d.is_active;
+      openModal('catModal');
+    });
+}
+
+document.getElementById('catForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const id = document.getElementById('catId').value;
+  const url = id ? `/admin/dashboard/categories/${id}/edit/` : '/admin/dashboard/categories/add/';
+  fetch(url, {
+    method: 'POST', headers: {'X-CSRFToken': csrftoken}, body: new FormData(this)
+  }).then(r=>r.json()).then(d => {
+    if(d.success) { showToast(d.message); closeModal('catModal'); setTimeout(()=>location.reload(),800); }
+    else showToast(d.error,'error');
+  });
+});
+
+function confirmDeleteCat(id, name) {
+  deleteCatId = id;
+  document.getElementById('deleteCatName').textContent = name;
+  openModal('deleteCatModal');
+}
+
+function doDeleteCat() {
+  if(!deleteCatId) return;
+  fetch(`/admin/dashboard/categories/${deleteCatId}/delete/`, {
+    method: 'POST', headers: {'X-CSRFToken': csrftoken}
+  }).then(r=>r.json()).then(d => {
+    if(d.success) {
+      showToast(d.message); closeModal('deleteCatModal');
+      const card = document.getElementById('cat-card-'+deleteCatId);
+      if(card) card.style.display='none';
+    } else showToast(d.error,'error');
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Verify OTP – Rasbahar Snacks{% endblock %}
+{% block extra_css %}
+<style>
+.auth-page {
+  min-height: calc(100vh - 61px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: var(--bg);
+}
+.auth-wrap { width: 100%; max-width: 400px; }
+.auth-hero {
+  background: linear-gradient(135deg, #FF5722, #E64A19);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  padding: 2.5rem 2rem 2rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.auth-hero::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 160px; height: 160px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+}
+.auth-icon { font-size: 3rem; margin-bottom: .75rem; position: relative; z-index: 1; }
+.auth-hero h1 {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: white;
+  letter-spacing: -.02em;
+  position: relative;
+  z-index: 1;
+}
+.auth-hero p {
+  color: rgba(255,255,255,.8);
+  font-size: .88rem;
+  margin-top: .35rem;
+  position: relative;
+  z-index: 1;
+}
+.phone-chip {
+  display: inline-block;
+  background: rgba(255,255,255,.22);
+  color: white;
+  padding: .3rem .9rem;
+  border-radius: 20px;
+  font-weight: 800;
+  font-size: .9rem;
+  margin-top: .6rem;
+  position: relative;
+  z-index: 1;
+}
+.auth-card {
+  background: white;
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  padding: 2rem 2rem 1.75rem;
+  border: 1px solid var(--border);
+  border-top: none;
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+/* OTP input override */
+.otp-field input, input[name="otp"] {
+  text-align: center;
+  letter-spacing: .6rem;
+  font-size: 1.8rem;
+  font-weight: 800;
+  font-family: 'DM Mono', monospace;
+  border: 1.5px solid var(--border-d);
+  border-radius: var(--r-sm);
+  padding: .75rem 1rem;
+  width: 100%;
+  transition: all var(--transition);
+  background: white;
+  outline: none;
+}
+input[name="otp"]:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(255,87,34,.12);
+}
+.otp-note { color: var(--text-l); font-size: .85rem; margin-bottom: 1.75rem; line-height: 1.5; }
+.resend-row {
+  margin-top: 1.25rem;
+  font-size: .85rem;
+  color: var(--text-l);
+}
+.resend-row button {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: .85rem;
+  padding: 0;
+}
+.resend-row button:hover { text-decoration: underline; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-wrap fu">
+    <div class="auth-hero">
+      <div class="auth-icon">📱</div>
+      <h1>Enter OTP</h1>
+      <p>We sent a 6-digit code to your Email</p>
+      <div class="phone-chip">{{ email }}</div>
+    </div>
+    <div class="auth-card">
+      <p class="otp-note">Enter the code below to verify your number and continue.</p>
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group otp-field">
+          {{ form.otp }}
+          {% if form.otp.errors %}<ul class="errorlist">{% for e in form.otp.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary btn-full press" style="padding:.85rem">Verify OTP ✓</button>
+      </form>
+      <div class="resend-row">
+        Didn't receive it?
+        <form method="post" style="display:inline">
+          {% csrf_token %}
+          <button type="submit" name="resend">Resend OTP</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

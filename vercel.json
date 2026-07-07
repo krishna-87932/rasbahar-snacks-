@@ -1,0 +1,15 @@
+{
+"builds":[
+    {
+        "src":"rasbahar_snacks/wsgi.py",
+        "use":"@vercel/python",
+        "config":{"maxLambdaSize":"15mb", "runtime":"3.14.3"}
+    }
+],
+"routes":[
+    {
+        "src": "/(.*)",
+        "dest": "rasbahar_snacks/wsgi.py"
+    }
+]
+}

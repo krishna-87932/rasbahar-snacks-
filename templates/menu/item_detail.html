@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }} – Rasbahar Snacks{% endblock %}
+{% block extra_css %}
+<style>
+.detail-page { max-width: 920px; margin: 2rem auto; padding: 0 1.25rem 3rem; }
+
+/* Breadcrumb */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: .82rem;
+  color: var(--text-l);
+  margin-bottom: 1.25rem;
+}
+.breadcrumb a { color: var(--text-l); text-decoration: none; font-weight: 600; transition: color var(--transition); }
+.breadcrumb a:hover { color: var(--primary); }
+.breadcrumb span { color: var(--border-d); }
+
+/* Item hero */
+.item-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  background: white;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+.item-hero-img {
+  height: 340px;
+  background: linear-gradient(135deg, #FFE0C0, #FFD0A0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6rem;
+  overflow: hidden;
+}
+.item-hero-img img { width: 100%; height: 100%; object-fit: cover; }
+.item-hero-body {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: .1rem;
+}
+.item-tags { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; margin-bottom: .9rem; }
+.item-name { font-size: 1.7rem; font-weight: 900; letter-spacing: -.03em; margin-bottom: .6rem; }
+.item-desc { color: var(--text-m); line-height: 1.65; font-size: .9rem; margin-bottom: 1.25rem; }
+
+/* Meta chips */
+.item-meta { display: flex; gap: .65rem; margin-bottom: 1.4rem; flex-wrap: wrap; }
+.meta-chip {
+  background: var(--bg);
+  border: 1px solid var(--border-d);
+  padding: .35rem .8rem;
+  border-radius: var(--r-sm);
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text-m);
+}
+
+/* Price */
+.item-price-row { display: flex; align-items: baseline; gap: .6rem; margin-bottom: 1.4rem; }
+.item-price { font-size: 2rem; font-weight: 900; color: var(--primary); letter-spacing: -.03em; }
+.item-price::before { content: '₹'; font-size: 1.3rem; }
+
+/* Related */
+.related-title { font-size: 1.2rem; font-weight: 900; letter-spacing: -.02em; margin-bottom: 1rem; }
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: .85rem;
+}
+.related-card {
+  background: white;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: all var(--transition);
+  box-shadow: var(--shadow);
+}
+.related-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.related-img {
+  height: 115px;
+  background: linear-gradient(135deg, #FFE0C0, #FFD0A0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  overflow: hidden;
+}
+.related-img img { width: 100%; height: 100%; object-fit: cover; }
+.related-body { padding: .85rem; }
+.related-name { font-size: .85rem; font-weight: 700; margin-bottom: .25rem; }
+.related-price { font-size: .88rem; color: var(--primary); font-weight: 800; }
+.related-price::before { content: '₹'; font-size: .75rem; }
+
+@media (max-width: 650px) {
+  .item-hero { grid-template-columns: 1fr; }
+  .item-hero-img { height: 220px; }
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="detail-page">
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb fu">
+    <a href="{% url 'menu:home' %}">Home</a>
+    <span>/</span>
+    <a href="{% url 'menu:menu' %}">Menu</a>
+    <span>/</span>
+    <span style="color:var(--text)">{{ item.name }}</span>
+  </nav>
+
+  <!-- Hero -->
+  <div class="item-hero fu d1">
+    <div class="item-hero-img">
+      {% if item.image %}<img src="{{ item.image.url }}" alt="{{ item.name }}">{% else %}🍟{% endif %}
+    </div>
+    <div class="item-hero-body">
+      <div class="item-tags">
+        <span class="veg-dot {% if item.is_veg %}veg{% else %}nonveg{% endif %}"><span class="dot"></span></span>
+        {% if item.is_veg %}
+          <span class="tag tag-veg">Veg</span>
+        {% else %}
+          <span class="tag tag-nonveg">Non-Veg</span>
+        {% endif %}
+        {% if item.is_spicy %}<span class="tag tag-spicy">🌶️ Spicy</span>{% endif %}
+        {% if item.is_featured %}<span class="tag" style="background:#FFF8E1;color:#F57F17">⭐ Featured</span>{% endif %}
+      </div>
+
+      <h1 class="item-name">{{ item.name }}</h1>
+      <p class="item-desc">{{ item.description|default:"Freshly prepared with authentic ingredients." }}</p>
+
+      <div class="item-meta">
+        {% if item.prep_time_minutes %}<span class="meta-chip">⏱️ {{ item.prep_time_minutes }} min prep</span>{% endif %}
+        {% if item.calories %}<span class="meta-chip">🔥 {{ item.calories }} kcal</span>{% endif %}
+        <span class="meta-chip">🏷️ {{ item.category.name }}</span>
+      </div>
+
+      <div class="item-price-row">
+        <span class="item-price">{{ item.price }}</span>
+      </div>
+
+      {% if user.is_authenticated %}
+        <form method="post" action="{% url 'orders:add_to_cart' item.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary press" style="padding:.8rem 1.75rem">🛒 Add to Cart</button>
+        </form>
+      {% else %}
+        <a href="{% url 'accounts:login' %}" class="btn btn-primary press" style="padding:.8rem 1.75rem">Login to Order</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Related -->
+  {% if related %}
+  <h2 class="related-title fu">You May Also Like</h2>
+  <div class="related-grid">
+    {% for r in related %}
+    <a href="{% url 'menu:item_detail' r.slug %}" class="related-card fu" style="animation-delay:{{ forloop.counter0 }}0ms">
+      <div class="related-img">
+        {% if r.image %}<img src="{{ r.image.url }}" alt="{{ r.name }}">{% else %}🍟{% endif %}
+      </div>
+      <div class="related-body">
+        <div class="related-name">{{ r.name }}</div>
+        <div class="related-price">{{ r.price }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

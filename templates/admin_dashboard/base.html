@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Admin Dashboard{% endblock %} — Rasbahar Snacks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --sidebar-w:260px;
+      --bg:#f0f2f5;--bg2:#ffffff;
+      --side-bg:linear-gradient(180deg,#1a1b2e 0%,#0f0f1a 100%);
+      --accent:#667eea;--accent2:#764ba2;
+      --accent-grad:linear-gradient(135deg,#667eea,#764ba2);
+      --green:#00b894;--green-l:#e8f5e9;
+      --red:#e74c3c;--red-l:#ffeaea;
+      --orange:#f39c12;--orange-l:#fff8e1;
+      --blue:#0984e3;--blue-l:#e3f2fd;
+      --purple:#6c5ce7;--purple-l:#f3e5f5;
+      --teal:#00cec9;
+      --text:#2d3436;--text-m:#636e72;--text-l:#b2bec3;
+      --border:#e0e0e0;
+      --shadow:0 2px 12px rgba(0,0,0,.06);
+      --shadow-md:0 4px 20px rgba(0,0,0,.1);
+      --r:10px;--r-lg:14px;
+      --tr:all .2s ease;
+      --topbar-h:64px;
+    }
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;-webkit-font-smoothing:antialiased}
+
+    /* ── Sidebar ── */
+    .sidebar{width:var(--sidebar-w);background:var(--side-bg);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;z-index:200;display:flex;flex-direction:column;scrollbar-width:none;transition:transform .3s ease}
+    .sidebar::-webkit-scrollbar{display:none}
+    .sidebar-logo{padding:24px 20px 20px;text-align:center}
+    .sidebar-logo a{color:#fff;text-decoration:none;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;background:rgba(255,255,255,.06);border-radius:var(--r);transition:var(--tr)}
+    .sidebar-logo a:hover{background:rgba(255,255,255,.12);transform:translateY(-1px)}
+    .sidebar-nav{flex:1;padding:0 12px}
+    .nav-section{font-size:11px;text-transform:uppercase;color:rgba(255,255,255,.35);letter-spacing:1.5px;padding:20px 14px 8px;font-weight:700}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:11px 14px;color:rgba(255,255,255,.7);text-decoration:none;border-radius:var(--r);margin-bottom:2px;font-size:14px;font-weight:500;transition:var(--tr)}
+    .nav-item:hover{background:rgba(255,255,255,.08);color:#fff;padding-left:18px}
+    .nav-item.active{background:var(--accent-grad);color:#fff;font-weight:600;box-shadow:0 4px 15px rgba(102,126,234,.35)}
+    .nav-item .icon{font-size:18px;width:24px;text-align:center}
+    .nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;min-width:20px;text-align:center}
+    .sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.08)}
+    .sidebar-footer .user-name{color:#fff;font-size:14px;font-weight:600}
+    .sidebar-footer .user-role{color:rgba(255,255,255,.4);font-size:12px;margin-top:2px}
+    .sidebar-footer .logout-btn{display:inline-block;margin-top:10px;color:var(--red);font-size:13px;text-decoration:none;font-weight:600;transition:var(--tr)}
+    .sidebar-footer .logout-btn:hover{color:#ff6b6b}
+
+    /* ── Sidebar overlay (mobile) ── */
+    .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;backdrop-filter:blur(2px);animation:fadeIn .2s ease}
+    .sidebar-overlay.show{display:block}
+
+    /* ── Hamburger (right side) ── */
+    .hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;width:44px;height:44px;cursor:pointer;padding:8px;border-radius:var(--r);border:none;background:transparent;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+    .hamburger:active{background:rgba(0,0,0,.06)}
+    .hamburger span{display:block;height:2.5px;background:var(--text);border-radius:2px;transition:var(--tr)}
+    .hamburger.open span:nth-child(1){transform:translateY(7.5px) rotate(45deg)}
+    .hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+    .hamburger.open span:nth-child(3){transform:translateY(-7.5px) rotate(-45deg)}
+
+    /* ── Main Content ── */
+    .main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
+    .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;height:var(--topbar-h);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);gap:12px}
+    .topbar-left{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+    .topbar-title{font-size:18px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .topbar-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+    .search-box{position:relative}
+    .search-box input{padding:9px 14px 9px 36px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;width:240px;outline:none;transition:var(--tr);font-family:inherit;background:var(--bg)}
+    .search-box input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(102,126,234,.12);background:#fff}
+    .search-box::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px}
+    .content{padding:24px 28px;flex:1}
+
+    /* ── Stats Grid ── */
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+    .stat-card{background:var(--bg2);padding:20px;border-radius:var(--r-lg);box-shadow:var(--shadow);border-left:4px solid;transition:var(--tr)}
+    .stat-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+    .stat-card.blue{border-left-color:var(--blue)}
+    .stat-card.green{border-left-color:var(--green)}
+    .stat-card.orange{border-left-color:var(--orange)}
+    .stat-card.red{border-left-color:var(--red)}
+    .stat-card.purple{border-left-color:var(--purple)}
+    .stat-card.teal{border-left-color:var(--teal)}
+    .stat-label{font-size:12px;color:var(--text-m);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:6px}
+    .stat-value{font-size:28px;font-weight:800;color:var(--text)}
+    .stat-sub{font-size:12px;color:var(--text-l);margin-top:4px}
+
+    /* ── Section Card ── */
+    .section{background:var(--bg2);border-radius:var(--r-lg);box-shadow:var(--shadow);padding:20px;margin-bottom:20px}
+    .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+    .section-title{font-size:16px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+
+    /* ── Table ── */
+    .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    table.dt{width:100%;border-collapse:collapse}
+    table.dt thead{background:var(--bg)}
+    table.dt th{padding:12px 14px;text-align:left;font-size:12px;font-weight:700;color:var(--text-m);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border)}
+    table.dt td{padding:12px 14px;border-bottom:1px solid #f0f0f0;font-size:14px;vertical-align:middle}
+    table.dt tbody tr{transition:var(--tr)}
+    table.dt tbody tr:hover{background:#f8f9ff}
+
+    /* ── Badges ── */
+    .badge{display:inline-block;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:.2px}
+    .badge-pending{background:#fff3cd;color:#856404}
+    .badge-confirmed{background:var(--blue-l);color:var(--blue)}
+    .badge-preparing{background:var(--orange-l);color:#e67e22}
+    .badge-ready{background:var(--purple-l);color:var(--purple)}
+    .badge-out_for_delivery,.badge-out-for-delivery{background:#e0f7fa;color:#0097a7}
+    .badge-delivered{background:var(--green-l);color:var(--green)}
+    .badge-cancelled{background:var(--red-l);color:var(--red)}
+    .badge-active{background:var(--green-l);color:var(--green)}
+    .badge-inactive{background:var(--red-l);color:var(--red)}
+
+    /* ── Buttons ── */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:var(--tr)}
+    .btn-primary{background:var(--accent-grad);color:#fff;box-shadow:0 2px 10px rgba(102,126,234,.3)}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 18px rgba(102,126,234,.45);color:#fff}
+    .btn-sm{padding:5px 10px;font-size:12px}
+    .btn-secondary{background:var(--bg);color:var(--text);border:1.5px solid var(--border)}
+    .btn-secondary:hover{background:var(--border)}
+    .btn-danger{background:var(--red);color:#fff}
+    .btn-danger:hover{background:#c0392b}
+    .btn-success{background:var(--green);color:#fff}
+    .btn-success:hover{background:#00a383}
+    .btn-ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+    .btn-ghost:hover{background:var(--accent);color:#fff}
+    .btn-group{display:flex;gap:6px;flex-wrap:wrap}
+
+    /* ── Filter Tabs ── */
+    .filter-tabs{display:flex;gap:6px;flex-wrap:wrap}
+    .filter-tab{padding:7px 14px;border-radius:var(--r);font-size:13px;font-weight:600;text-decoration:none;color:var(--text-m);background:var(--bg);border:1.5px solid transparent;transition:var(--tr)}
+    .filter-tab:hover{background:var(--border);color:var(--text)}
+    .filter-tab.active{background:var(--accent-grad);color:#fff;border-color:transparent}
+    .filter-tab .count{font-size:11px;margin-left:4px;opacity:.7}
+
+    /* ── Toggle Switch ── */
+    .toggle{position:relative;width:40px;height:22px;cursor:pointer}
+    .toggle input{display:none}
+    .toggle .slider{position:absolute;inset:0;background:#ccc;border-radius:22px;transition:var(--tr)}
+    .toggle .slider::before{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:3px;transition:var(--tr)}
+    .toggle input:checked+.slider{background:var(--green)}
+    .toggle input:checked+.slider::before{transform:translateX(18px)}
+
+    /* ── Modal ── */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);animation:fadeIn .2s ease}
+    .modal-overlay.show{display:flex}
+    .modal{background:var(--bg2);border-radius:var(--r-lg) var(--r-lg) 0 0;width:100%;max-width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 -10px 60px rgba(0,0,0,.2);animation:slideUpModal .3s ease}
+    .modal-lg{max-width:100%}
+    .modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:10}
+    .modal-header h2{font-size:17px;font-weight:700}
+    .modal-close{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:var(--bg);font-size:18px;color:var(--text-m);transition:var(--tr);flex-shrink:0}
+    .modal-close:hover{background:var(--red-l);color:var(--red)}
+    .modal-body{padding:20px}
+    .modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:var(--bg2)}
+
+    /* ── Form ── */
+    .form-group{margin-bottom:14px}
+    .form-label{display:block;font-size:13px;font-weight:600;color:var(--text-m);margin-bottom:6px}
+    .form-input,.form-select,.form-textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:14px;font-family:inherit;outline:none;transition:var(--tr);background:var(--bg);color:var(--text)}
+    .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(102,126,234,.12);background:#fff}
+    .form-textarea{resize:vertical;min-height:80px}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .form-check{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+    .form-check input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+    .form-checks{display:flex;gap:20px;flex-wrap:wrap}
+
+    /* ── Toast ── */
+    .toast-container{position:fixed;top:16px;right:16px;left:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+    .toast{padding:13px 18px;border-radius:var(--r);font-size:14px;font-weight:600;color:#fff;box-shadow:0 4px 20px rgba(0,0,0,.2);animation:slideIn .3s ease;display:flex;align-items:center;gap:10px;pointer-events:all}
+    .toast-success{background:var(--green)}
+    .toast-error{background:var(--red)}
+    .toast-info{background:var(--accent)}
+
+    /* ── Charts Grid ── */
+    .charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;margin-bottom:20px}
+    .chart-card{background:var(--bg2);padding:18px;border-radius:var(--r-lg);box-shadow:var(--shadow)}
+    .chart-title{font-size:15px;font-weight:700;margin-bottom:14px;color:var(--text)}
+
+    /* ── Status Select ── */
+    .status-select{padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;outline:none;cursor:pointer;transition:var(--tr);max-width:140px}
+    .status-select:focus{border-color:var(--accent)}
+
+    /* ── Animations ── */
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes slideUpModal{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
+    @keyframes slideIn{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:none}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+    .fu{animation:fadeUp .3s ease both}
+    .d1{animation-delay:.04s}.d2{animation-delay:.08s}.d3{animation-delay:.12s}.d4{animation-delay:.16s}
+
+    /* ── Empty state ── */
+    .empty-state{text-align:center;padding:40px 20px;color:var(--text-l)}
+    .empty-state .icon{font-size:48px;margin-bottom:12px}
+    .empty-state p{font-size:15px}
+
+    /* ══════════════════════════════════════
+       RESPONSIVE — Tablet (≤1024px)
+    ══════════════════════════════════════ */
+    @media(max-width:1024px){
+      :root{--sidebar-w:220px}
+      .search-box input{width:180px}
+      .content{padding:20px}
+    }
+
+    /* ══════════════════════════════════════
+       RESPONSIVE — Mobile (≤768px)
+    ══════════════════════════════════════ */
+    @media(max-width:768px){
+      /* Sidebar becomes a right-side drawer */
+      .sidebar{transform:translateX(100%);width:280px;left:auto;right:0}
+      .sidebar.open{transform:translateX(0);box-shadow:-4px 0 40px rgba(0,0,0,.3)}
+
+      /* Hamburger visible on RIGHT */
+      .hamburger{display:flex;order:99}
+
+      /* Main fills full width */
+      .main{margin-left:0}
+
+      /* Topbar — title left, hamburger right */
+      .topbar{padding:0 12px;gap:8px;height:56px}
+      .topbar-left{flex:1}
+      .topbar-title{font-size:16px;font-weight:800}
+
+      /* Content padding — comfortable for phone */
+      .content{padding:16px 14px}
+
+      /* Stats: 2 columns, bigger text */
+      .stats-grid{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+      .stat-card{padding:16px 14px;border-radius:var(--r)}
+      .stat-value{font-size:24px}
+      .stat-label{font-size:12px;margin-bottom:4px}
+      .stat-sub{font-size:11px}
+
+      /* Charts: single column */
+      .charts-grid{grid-template-columns:1fr;gap:14px;margin-bottom:16px}
+
+      /* Section padding */
+      .section{padding:16px 14px;margin-bottom:14px;border-radius:var(--r)}
+
+      /* Form rows collapse */
+      .form-row{grid-template-columns:1fr}
+
+      /* Filter tabs: horizontal scroll, bigger touch targets */
+      .filter-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;gap:6px}
+      .filter-tabs::-webkit-scrollbar{display:none}
+      .filter-tab{white-space:nowrap;padding:8px 14px;font-size:13px;min-height:38px;display:flex;align-items:center}
+
+      /* Modal: full bottom sheet */
+      .modal-overlay{align-items:flex-end}
+      .modal,.modal-lg{border-radius:20px 20px 0 0;max-width:100%;width:100%;max-height:90vh}
+
+      /* Toast: full width */
+      .toast-container{left:12px;right:12px;top:12px}
+
+      /* Status select — touch friendly */
+      .status-select{max-width:140px;font-size:13px;padding:8px 10px;min-height:38px}
+
+      /* Section header wraps */
+      .section-header{flex-direction:column;align-items:flex-start;gap:10px}
+
+      /* Hide desktop search */
+      .topbar .search-box{display:none}
+
+      /* Buttons — touch friendly sizes */
+      .btn{min-height:40px;padding:10px 16px;font-size:13px}
+      .btn-sm{min-height:36px;padding:8px 12px;font-size:12px}
+      .topbar-right .btn-sm{padding:6px 12px;font-size:12px;min-height:34px}
+
+      /* Table text readability */
+      table.dt td{font-size:14px;padding:10px 12px}
+      table.dt th{font-size:11px;padding:10px 12px}
+
+      /* Nav items: bigger touch targets */
+      .nav-item{padding:14px 16px;font-size:15px;gap:12px}
+      .nav-section{padding:22px 16px 10px;font-size:12px}
+      .sidebar-logo a{padding:16px;font-size:20px}
+      .sidebar-footer{padding:18px 20px}
+    }
+
+    /* ══════════════════════════════════════
+       RESPONSIVE — Small Mobile (≤480px)
+    ══════════════════════════════════════ */
+    @media(max-width:480px){
+      .stats-grid{grid-template-columns:1fr 1fr;gap:8px}
+      .stat-card{padding:14px 12px}
+      .stat-value{font-size:22px}
+      .stat-label{font-size:11px}
+
+      .topbar-title{font-size:15px}
+
+      /* Modal full height on tiny screens */
+      .modal,.modal-lg{max-height:94vh}
+
+      /* Form checks wrap tightly */
+      .form-checks{gap:12px}
+
+      /* Btn group stacks */
+      .btn-group{gap:6px}
+      .btn-group .btn-sm{font-size:12px;padding:6px 10px}
+
+      /* Filter tab scroll */
+      .filter-tab{font-size:12px;padding:7px 12px}
+
+      /* Content tighter */
+      .content{padding:12px 10px}
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- Sidebar Overlay (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <a href="{% url 'admin:index' %}">🍔 RASBAHAR</a>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Dashboard</div>
+    <a href="{% url 'admin:index' %}" class="nav-item {% if page == 'dashboard' %}active{% endif %}" onclick="closeSidebar()">
+      <span class="icon">📊</span> Overview
+    </a>
+
+    <div class="nav-section">Management</div>
+    <a href="{% url 'admin:orders_dashboard' %}" class="nav-item {% if page == 'orders' %}active{% endif %}" onclick="closeSidebar()">
+      <span class="icon">📦</span> Orders
+      {% if pending_count %}<span class="nav-badge">{{ pending_count }}</span>{% endif %}
+    </a>
+    <a href="{% url 'admin:menu_dashboard' %}" class="nav-item {% if page == 'menu' %}active{% endif %}" onclick="closeSidebar()">
+      <span class="icon">🍽️</span> Menu Items
+    </a>
+    <a href="{% url 'admin:categories_dashboard' %}" class="nav-item {% if page == 'categories' %}active{% endif %}" onclick="closeSidebar()">
+      <span class="icon">📁</span> Categories
+    </a>
+    <a href="{% url 'admin:users_dashboard' %}" class="nav-item {% if page == 'users' %}active{% endif %}" onclick="closeSidebar()">
+      <span class="icon">👥</span> Users
+    </a>
+
+    <div class="nav-section">System</div>
+    <a href="{% url 'admin:app_list' %}" class="nav-item" onclick="closeSidebar()">
+      <span class="icon">⚙️</span> Django Models
+    </a>
+    <a href="{% url 'menu:home' %}" class="nav-item" target="_blank" onclick="closeSidebar()">
+      <span class="icon">🌐</span> View Site
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-name">{{ request.user.name }}</div>
+    <div class="user-role">{% if request.user.is_superuser %}Superuser{% elif request.user.is_staff %}Staff{% endif %}</div>
+    <a href="{% url 'admin:logout' %}" class="logout-btn">🚪 Logout</a>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">{% block topbar_title %}Dashboard{% endblock %}</div>
+    </div>
+    <div class="topbar-right">
+      {% block topbar_actions %}{% endblock %}
+      <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <div class="content">
+    {% block dashboard_content %}{% endblock %}
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ── Sidebar drawer ── */
+function toggleSidebar() {
+  const s = document.getElementById('sidebar');
+  const o = document.getElementById('sidebarOverlay');
+  const h = document.getElementById('hamburger');
+  const isOpen = s.classList.contains('open');
+  s.classList.toggle('open', !isOpen);
+  o.classList.toggle('show', !isOpen);
+  h.classList.toggle('open', !isOpen);
+  document.body.style.overflow = isOpen ? '' : 'hidden';
+}
+
+function closeSidebar() {
+  const s = document.getElementById('sidebar');
+  const o = document.getElementById('sidebarOverlay');
+  const h = document.getElementById('hamburger');
+  s.classList.remove('open');
+  o.classList.remove('show');
+  h.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* Close sidebar on resize to desktop */
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 768) closeSidebar();
+});
+
+/* ── Toast ── */
+function showToast(msg, type='success') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.innerHTML = (type==='success'?'✓':type==='error'?'✕':'ℹ') + ' ' + msg;
+  c.appendChild(t);
+  setTimeout(() => {
+    t.style.opacity='0';
+    t.style.transform='translateX(60px)';
+    t.style.transition='all .3s ease';
+    setTimeout(()=>t.remove(),300);
+  }, 3500);
+}
+
+/* ── CSRF ── */
+function getCookie(name) {
+  let v = null;
+  document.cookie.split(';').forEach(c => {
+    c = c.trim();
+    if (c.startsWith(name + '=')) v = decodeURIComponent(c.substring(name.length + 1));
+  });
+  return v;
+}
+const csrftoken = getCookie('csrftoken');
+
+/* ── Modal ── */
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+/* Close modal on overlay click */
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+});
+
+/* Close modal on Escape */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.show').forEach(m => {
+      m.classList.remove('show');
+      document.body.style.overflow = '';
+    });
+  }
+});
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

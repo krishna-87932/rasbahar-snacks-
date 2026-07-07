@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}My Profile – Rasbahar Snacks{% endblock %}
+{% block extra_css %}
+<style>
+.profile-page { max-width: 680px; margin: 2rem auto; padding: 0 1.25rem 3rem; }
+
+/* Hero banner */
+.profile-hero {
+  background: linear-gradient(135deg, #FF5722, #E64A19);
+  border-radius: var(--r-lg);
+  padding: 2rem 1.75rem;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  margin-bottom: 1.1rem;
+  position: relative;
+  overflow: hidden;
+}
+.profile-hero::before {
+  content: '';
+  position: absolute;
+  top: -50px; right: -50px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+}
+.avatar {
+  width: 74px; height: 74px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 900;
+  color: white;
+  border: 3px solid rgba(255,255,255,.4);
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  position: relative;
+  z-index: 1;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.profile-info { position: relative; z-index: 1; }
+.profile-name { font-size: 1.3rem; font-weight: 900; letter-spacing: -.02em; }
+.profile-phone { opacity: .82; font-size: .88rem; margin-top: .25rem; }
+.profile-email { opacity: .75; font-size: .82rem; margin-top: .15rem; }
+
+/* Cards */
+.section-card {
+  background: white;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  padding: 1.6rem 1.75rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 1rem;
+}
+.section-card-title {
+  font-size: .82rem;
+  font-weight: 800;
+  color: var(--text-m);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: 1.25rem;
+  padding-bottom: .9rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+
+/* Action links */
+.action-links { display: flex; gap: .65rem; flex-wrap: wrap; }
+.action-links form { margin: 0; }
+.btn-danger { background: var(--red-l); color: var(--red); border: 1.5px solid rgba(198,40,40,.18); }
+.btn-danger:hover { background: #ffcdd2; color: var(--red); }
+</style>
+{% endblock %}
+{% block content %}
+<div class="profile-page">
+
+  <!-- Hero -->
+  <div class="profile-hero fu">
+    <div class="avatar">
+      {% if user.profile_picture %}
+        <img src="{{ user.profile_picture.url }}" alt="">
+      {% else %}
+        {{ user.name|first|upper }}
+      {% endif %}
+    </div>
+    <div class="profile-info">
+      <div class="profile-name">{{ user.name }}</div>
+      <div class="profile-phone">📞 {{ user.phone_number }}</div>
+      {% if user.email %}<div class="profile-email">✉️ {{ user.email }}</div>{% endif %}
+    </div>
+  </div>
+
+  <!-- Edit Profile -->
+  <div class="section-card fu d1">
+    <div class="section-card-title">✏️ Edit Profile</div>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="form-group">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary press">Save Changes</button>
+    </form>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="section-card fu d2">
+    <div class="section-card-title">🔗 Quick Actions</div>
+    <div class="action-links">
+      <a href="{% url 'orders:order_list' %}" class="btn btn-secondary press">📦 My Orders</a>
+      <a href="{% url 'accounts:change_password' %}" class="btn btn-outline press">🔒 Change Password</a>
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger press">🚪 Logout</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
