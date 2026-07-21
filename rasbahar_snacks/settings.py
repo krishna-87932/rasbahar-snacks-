@@ -113,10 +113,7 @@ LOGOUT_REDIRECT_URL = 'accounts:login'
 OTP_EXPIRY_MINUTES = 10
 OTP_LENGTH = 6
 
-# Restaurant Location & Delivery Radius
-RESTAURANT_LAT = 18.5732323836383
-RESTAURANT_LNG = 73.75629201112027
-MAX_DELIVERY_RADIUS_KM = 10  # Maximum delivery distance in kilometers
+
 
 # Email backend (console for dev)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

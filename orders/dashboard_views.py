@@ -14,8 +14,8 @@ from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.utils.text import slugify
 from datetime import timedelta
-from .models import Order, OrderItem, Cart, CartItem
-from menu.models import MenuItem, Category
+from .models import Order, OrderItem, Cart, CartItem, OrderItemAddOn
+from menu.models import MenuItem, Category, AddOn, DailyMenu, DailyMenuItem
 from accounts.models import User
 
 
@@ -173,11 +173,19 @@ def order_detail_api(request, order_id):
     order = get_object_or_404(Order.objects.select_related('user'), pk=order_id)
     items = []
     for oi in order.order_items.all():
+        addon_list = []
+        for oa in oi.order_addons.all():
+            addon_list.append({
+                'name': oa.addon_name,
+                'price': str(oa.addon_price),
+                'quantity': oa.quantity,
+            })
         items.append({
             'name': oi.item_name,
             'price': str(oi.item_price),
             'quantity': oi.quantity,
             'subtotal': str(oi.subtotal),
+            'addons': addon_list,
         })
 
     data = {
@@ -578,3 +586,363 @@ def user_detail_api(request, user_id):
         ],
     }
     return JsonResponse(data)
+
+
+# ──────────────────────────────────────────────
+# ADD-ONS
+# ──────────────────────────────────────────────
+
+@staff_member_required
+def addons_dashboard(request):
+    """Add-ons management page."""
+    addons = AddOn.objects.prefetch_related('menu_items').order_by('-created_at')
+    menu_items = MenuItem.objects.select_related('category').order_by('category__name', 'name')
+
+    search = request.GET.get('q', '')
+    if search:
+        addons = addons.filter(Q(name__icontains=search))
+
+    stats = {
+        'total': AddOn.objects.count(),
+        'available': AddOn.objects.filter(is_available=True).count(),
+        'unavailable': AddOn.objects.filter(is_available=False).count(),
+    }
+
+    context = {
+        'addons': addons,
+        'menu_items': menu_items,
+        'search': search,
+        'stats': stats,
+        'page': 'addons',
+    }
+    return render(request, 'admin_dashboard/addons.html', context)
+
+
+@staff_member_required
+@require_POST
+def toggle_addon(request, addon_id):
+    """Toggle availability via AJAX."""
+    addon = get_object_or_404(AddOn, pk=addon_id)
+    addon.is_available = not addon.is_available
+    addon.save(update_fields=['is_available'])
+    return JsonResponse({'success': True, 'value': addon.is_available})
+
+
+@staff_member_required
+@require_POST
+def add_addon(request):
+    """Add a new add-on via AJAX form."""
+    try:
+        name = request.POST.get('name', '').strip()
+        price = request.POST.get('price', '')
+        is_veg = request.POST.get('is_veg') == 'on'
+        is_available = request.POST.get('is_available') == 'on'
+        image = request.FILES.get('image')
+        menu_item_ids = request.POST.getlist('menu_items')
+
+        if not name or not price:
+            return JsonResponse({'success': False, 'error': 'Name and price are required.'}, status=400)
+
+        addon = AddOn.objects.create(
+            name=name,
+            price=price,
+            is_veg=is_veg,
+            is_available=is_available,
+            image=image,
+        )
+        if menu_item_ids:
+            addon.menu_items.set(menu_item_ids)
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Add-on "{addon.name}" created!',
+            'id': addon.id,
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@staff_member_required
+@require_POST
+def edit_addon(request, addon_id):
+    """Edit an add-on via AJAX form."""
+    addon = get_object_or_404(AddOn, pk=addon_id)
+    try:
+        addon.name = request.POST.get('name', addon.name).strip()
+        addon.price = request.POST.get('price', addon.price)
+        addon.is_veg = request.POST.get('is_veg') == 'on'
+        addon.is_available = request.POST.get('is_available') == 'on'
+        image = request.FILES.get('image')
+        if image:
+            addon.image = image
+        addon.save()
+
+        menu_item_ids = request.POST.getlist('menu_items')
+        addon.menu_items.set(menu_item_ids)
+
+        return JsonResponse({'success': True, 'message': f'Add-on "{addon.name}" updated!'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@staff_member_required
+@require_POST
+def delete_addon(request, addon_id):
+    """Delete an add-on via AJAX."""
+    addon = get_object_or_404(AddOn, pk=addon_id)
+    name = addon.name
+    addon.delete()
+    return JsonResponse({'success': True, 'message': f'Add-on "{name}" deleted!'})
+
+
+@staff_member_required
+@require_GET
+def addon_detail_api(request, addon_id):
+    """Return add-on details as JSON for edit modal."""
+    addon = get_object_or_404(AddOn.objects.prefetch_related('menu_items'), pk=addon_id)
+    data = {
+        'id': addon.id,
+        'name': addon.name,
+        'price': str(addon.price),
+        'is_veg': addon.is_veg,
+        'is_available': addon.is_available,
+        'image_url': addon.image.url if addon.image else '',
+        'menu_item_ids': list(addon.menu_items.values_list('id', flat=True)),
+    }
+    return JsonResponse(data)
+
+
+# ──────────────────────────────────────────────
+# DAILY MENU
+# ──────────────────────────────────────────────
+
+@staff_member_required
+def daily_menu_dashboard(request):
+    """Daily menu management page."""
+    today = timezone.now().date()
+    now = timezone.localtime().time()
+    menus = DailyMenu.objects.prefetch_related('daily_items__menu_item').order_by('-created_at')
+    menu_items = MenuItem.objects.select_related('category').filter(is_available=True).order_by('category__name', 'name')
+
+    search = request.GET.get('q', '')
+    if search:
+        menus = menus.filter(Q(title__icontains=search))
+
+    # Stats
+    total_menus = DailyMenu.objects.count()
+    active_now = 0
+    for m in DailyMenu.objects.filter(is_active=True):
+        if m.is_currently_active():
+            active_now += 1
+    items_sold_today = DailyMenuItem.objects.filter(date=today).aggregate(s=Sum('quantity_sold'))['s'] or 0
+
+    stats = {
+        'total': total_menus,
+        'active_now': active_now,
+        'items_sold_today': items_sold_today,
+    }
+
+    # Add today's item data to each menu
+    menu_data = []
+    for menu in menus:
+        today_items = menu.daily_items.filter(date=today)
+        total_qty = sum(di.quantity_total for di in today_items)
+        total_sold = sum(di.quantity_sold for di in today_items)
+        menu_data.append({
+            'menu': menu,
+            'today_items': today_items,
+            'total_qty': total_qty,
+            'total_sold': total_sold,
+            'is_live': menu.is_currently_active(),
+        })
+
+    context = {
+        'menu_data': menu_data,
+        'menu_items': menu_items,
+        'search': search,
+        'stats': stats,
+        'today': today,
+        'page': 'daily_menu',
+    }
+    return render(request, 'admin_dashboard/daily_menu.html', context)
+
+
+@staff_member_required
+@require_POST
+def add_daily_menu(request):
+    """Add a new daily menu with items and quantities via AJAX."""
+    try:
+        title = request.POST.get('title', '').strip()
+        description = request.POST.get('description', '').strip()
+        icon = request.POST.get('icon', '🍱').strip()
+        start_time = request.POST.get('start_time', '')
+        end_time = request.POST.get('end_time', '')
+        is_active = request.POST.get('is_active') == 'on'
+
+        if not title or not start_time or not end_time:
+            return JsonResponse({'success': False, 'error': 'Title, start time and end time are required.'}, status=400)
+
+        menu = DailyMenu.objects.create(
+            title=title,
+            description=description,
+            icon=icon,
+            start_time=start_time,
+            end_time=end_time,
+            is_active=is_active,
+        )
+
+        # Process items with quantities
+        today = timezone.now().date()
+        item_ids = request.POST.getlist('item_ids')
+        item_quantities = request.POST.getlist('item_quantities')
+
+        for i, item_id in enumerate(item_ids):
+            if item_id:
+                qty = int(item_quantities[i]) if i < len(item_quantities) and item_quantities[i] else 0
+                if qty > 0:
+                    DailyMenuItem.objects.create(
+                        daily_menu=menu,
+                        menu_item_id=int(item_id),
+                        quantity_total=qty,
+                        quantity_sold=0,
+                        date=today,
+                    )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Daily menu "{menu.title}" created!',
+            'id': menu.id,
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@staff_member_required
+@require_POST
+def edit_daily_menu(request, menu_id):
+    """Edit a daily menu via AJAX."""
+    menu = get_object_or_404(DailyMenu, pk=menu_id)
+    try:
+        menu.title = request.POST.get('title', menu.title).strip()
+        menu.description = request.POST.get('description', menu.description).strip()
+        menu.icon = request.POST.get('icon', menu.icon).strip()
+        menu.start_time = request.POST.get('start_time', menu.start_time)
+        menu.end_time = request.POST.get('end_time', menu.end_time)
+        menu.is_active = request.POST.get('is_active') == 'on'
+        menu.save()
+
+        # Update items for today
+        today = timezone.now().date()
+        item_ids = request.POST.getlist('item_ids')
+        item_quantities = request.POST.getlist('item_quantities')
+
+        # Remove old items for today that are no longer in the list
+        existing_items = menu.daily_items.filter(date=today)
+        new_item_ids = [int(x) for x in item_ids if x]
+        existing_items.exclude(menu_item_id__in=new_item_ids).delete()
+
+        # Add/update items
+        for i, item_id in enumerate(item_ids):
+            if item_id:
+                qty = int(item_quantities[i]) if i < len(item_quantities) and item_quantities[i] else 0
+                if qty > 0:
+                    di, created = DailyMenuItem.objects.get_or_create(
+                        daily_menu=menu,
+                        menu_item_id=int(item_id),
+                        date=today,
+                        defaults={'quantity_total': qty, 'quantity_sold': 0}
+                    )
+                    if not created:
+                        di.quantity_total = qty
+                        di.save(update_fields=['quantity_total'])
+
+        return JsonResponse({'success': True, 'message': f'Daily menu "{menu.title}" updated!'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@staff_member_required
+@require_POST
+def delete_daily_menu(request, menu_id):
+    """Delete a daily menu via AJAX."""
+    menu = get_object_or_404(DailyMenu, pk=menu_id)
+    title = menu.title
+    menu.delete()
+    return JsonResponse({'success': True, 'message': f'Daily menu "{title}" deleted!'})
+
+
+@staff_member_required
+@require_POST
+def toggle_daily_menu(request, menu_id):
+    """Toggle active status via AJAX."""
+    menu = get_object_or_404(DailyMenu, pk=menu_id)
+    menu.is_active = not menu.is_active
+    menu.save(update_fields=['is_active'])
+    return JsonResponse({'success': True, 'value': menu.is_active})
+
+
+@staff_member_required
+@require_GET
+def daily_menu_detail_api(request, menu_id):
+    """Return daily menu details as JSON for edit modal."""
+    menu = get_object_or_404(DailyMenu, pk=menu_id)
+    today = timezone.now().date()
+    today_items = menu.daily_items.filter(date=today).select_related('menu_item')
+
+    data = {
+        'id': menu.id,
+        'title': menu.title,
+        'description': menu.description,
+        'icon': menu.icon,
+        'start_time': menu.start_time.strftime('%H:%M'),
+        'end_time': menu.end_time.strftime('%H:%M'),
+        'is_active': menu.is_active,
+        'items': [
+            {
+                'menu_item_id': di.menu_item_id,
+                'menu_item_name': di.menu_item.name,
+                'quantity_total': di.quantity_total,
+                'quantity_sold': di.quantity_sold,
+                'quantity_remaining': di.quantity_remaining,
+            }
+            for di in today_items
+        ],
+    }
+    return JsonResponse(data)
+
+
+@staff_member_required
+@require_POST
+def reset_daily_menu_stock(request, menu_id):
+    """Reset stock for a daily menu — create fresh DailyMenuItems for today."""
+    menu = get_object_or_404(DailyMenu, pk=menu_id)
+    today = timezone.now().date()
+
+    # Get yesterday's items (or latest) to copy quantities
+    latest_items = menu.daily_items.exclude(date=today).order_by('-date')
+    seen_items = set()
+    items_to_copy = []
+    for di in latest_items:
+        if di.menu_item_id not in seen_items:
+            seen_items.add(di.menu_item_id)
+            items_to_copy.append(di)
+
+    # Delete today's items if they exist
+    menu.daily_items.filter(date=today).delete()
+
+    # Create fresh items for today
+    count = 0
+    for di in items_to_copy:
+        DailyMenuItem.objects.create(
+            daily_menu=menu,
+            menu_item=di.menu_item,
+            quantity_total=di.quantity_total,
+            quantity_sold=0,
+            date=today,
+        )
+        count += 1
+
+    return JsonResponse({
+        'success': True,
+        'message': f'Stock reset for "{menu.title}" — {count} items refreshed for today!',
+    })

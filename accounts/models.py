@@ -1,10 +1,8 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
-from django.conf import settings as app_settings
 from django.utils import timezone
 import random
 import string
-import math
 
 
 class UserManager(BaseUserManager):
@@ -34,8 +32,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone_number = models.CharField(max_length=15, unique=True)
     email = models.EmailField(unique=True)
     address = models.TextField(blank=True)
-    latitude = models.FloatField(null=True, blank=True)
-    longitude = models.FloatField(null=True, blank=True)
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
     is_active = models.BooleanField(default=False)  # Activated via OTP
     is_staff = models.BooleanField(default=False)
@@ -53,32 +49,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return f"{self.name} ({self.phone_number})"
 
-    @property
-    def has_location(self):
-        """Check if user has GPS coordinates saved."""
-        return self.latitude is not None and self.longitude is not None
 
-    @property
-    def distance_from_restaurant_km(self):
-        """Calculate distance from restaurant using Haversine formula. Returns km or None."""
-        if not self.has_location:
-            return None
-        R = 6371  # Earth's radius in km
-        lat1 = math.radians(app_settings.RESTAURANT_LAT)
-        lat2 = math.radians(self.latitude)
-        dlat = math.radians(self.latitude - app_settings.RESTAURANT_LAT)
-        dlng = math.radians(self.longitude - app_settings.RESTAURANT_LNG)
-        a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlng / 2) ** 2
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-        return round(R * c, 2)
-
-    @property
-    def is_within_delivery_range(self):
-        """Check if user is within the delivery radius."""
-        dist = self.distance_from_restaurant_km
-        if dist is None:
-            return False
-        return dist <= app_settings.MAX_DELIVERY_RADIUS_KM
 
 
 def generate_otp(length=6):

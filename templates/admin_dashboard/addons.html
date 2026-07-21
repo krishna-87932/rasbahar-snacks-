@@ -1,0 +1,242 @@
+{% extends 'admin_dashboard/base.html' %}
+{% block title %}Add-Ons Management{% endblock %}
+{% block topbar_title %}🧩 Add-Ons{% endblock %}
+{% block topbar_actions %}
+<form class="search-box" method="get" action="">
+  <input type="text" name="q" value="{{ search }}" placeholder="Search add-ons...">
+</form>
+<button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Add</button>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .linked-items { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .linked-chip {
+    background: var(--blue-l); color: var(--blue); font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+  }
+  .multi-select-wrap { max-height: 200px; overflow-y: auto; border: 1.5px solid var(--border); border-radius: var(--r); padding: 8px; background: var(--bg); }
+  .multi-select-wrap label { display: flex; align-items: center; gap: 8px; padding: 6px 4px; font-size: 13px; cursor: pointer; border-radius: 4px; transition: var(--tr); }
+  .multi-select-wrap label:hover { background: var(--blue-l); }
+  .multi-select-wrap input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); }
+  @media(max-width:768px){
+    .addon-dt thead{display:none}
+    .addon-dt tr{display:block;background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);margin-bottom:10px;padding:12px 14px}
+    .addon-dt td{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border:none;font-size:13px;border-bottom:1px solid #f4f4f4}
+    .addon-dt td:last-child{border-bottom:none}
+    .addon-dt td::before{content:attr(data-label);font-size:11px;font-weight:700;color:var(--text-l);text-transform:uppercase;letter-spacing:.4px;flex-shrink:0;margin-right:10px}
+    .addon-dt td.img-cell::before{content:none}
+    .addon-dt td.img-cell{justify-content:flex-start;padding-bottom:10px;border-bottom:1px solid #f0f0f0}
+  }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Stats -->
+<div class="stats-grid fu">
+  <div class="stat-card blue"><p class="stat-label">Total Add-Ons</p><p class="stat-value">{{ stats.total }}</p></div>
+  <div class="stat-card green"><p class="stat-label">Available</p><p class="stat-value">{{ stats.available }}</p></div>
+  <div class="stat-card red"><p class="stat-label">Unavailable</p><p class="stat-value">{{ stats.unavailable }}</p></div>
+</div>
+
+<!-- Add-Ons Table -->
+<div class="section fu d1">
+  <div class="section-header">
+    <h3 class="section-title">Add-On Items</h3>
+  </div>
+
+  <div class="table-wrap">
+    <table class="dt addon-dt">
+      <thead>
+        <tr><th>Image</th><th>Name</th><th>Price</th><th>Type</th><th>Available</th><th>Linked Dishes</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for addon in addons %}
+        <tr id="addon-row-{{ addon.id }}">
+          <td class="img-cell">
+            {% if addon.image %}
+            <img src="{{ addon.image.url }}" width="44" height="44" style="border-radius:8px;object-fit:cover">
+            {% else %}
+            <div style="width:44px;height:44px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px">🧩</div>
+            {% endif %}
+          </td>
+          <td data-label="Name"><strong>{{ addon.name }}</strong></td>
+          <td data-label="Price"><strong style="color:var(--green)">₹{{ addon.price }}</strong></td>
+          <td data-label="Type">
+            {% if addon.is_veg %}
+            <span class="badge badge-active" style="font-size:11px">🟢 Veg</span>
+            {% else %}
+            <span class="badge badge-inactive" style="font-size:11px">🔴 Non-Veg</span>
+            {% endif %}
+          </td>
+          <td data-label="Available">
+            <label class="toggle">
+              <input type="checkbox" {% if addon.is_available %}checked{% endif %} onchange="toggleAddon({{ addon.id }})">
+              <span class="slider"></span>
+            </label>
+          </td>
+          <td data-label="Linked Dishes">
+            <div class="linked-items">
+              {% for item in addon.menu_items.all %}
+              <span class="linked-chip">{{ item.name }}</span>
+              {% empty %}
+              <span style="color:var(--text-l);font-size:12px">None</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td data-label="Actions">
+            <div class="btn-group">
+              <button class="btn btn-sm btn-secondary" onclick="openEditModal({{ addon.id }})">✏️</button>
+              <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ addon.id }},'{{ addon.name|escapejs }}')">🗑️</button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="empty-state"><div class="icon">🧩</div><p>No add-ons found. Click "+ Add" to create one.</p></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="addonModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2 id="addonModalTitle">Add Add-On</h2>
+      <button class="modal-close" onclick="closeModal('addonModal')">✕</button>
+    </div>
+    <form id="addonForm" enctype="multipart/form-data">
+      <div class="modal-body">
+        <input type="hidden" id="addonId" value="">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Name *</label>
+            <input type="text" class="form-input" id="f-name" name="name" required placeholder="e.g., Extra Cheese, Cold Drink">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Price (₹) *</label>
+            <input type="number" class="form-input" id="f-price" name="price" step="0.01" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Image</label>
+          <input type="file" class="form-input" id="f-image" name="image" accept="image/*">
+        </div>
+        <div class="form-checks" style="margin-bottom:14px">
+          <label class="form-check"><input type="checkbox" id="f-veg" name="is_veg" checked> Veg</label>
+          <label class="form-check"><input type="checkbox" id="f-avail" name="is_available" checked> Available</label>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Link to Menu Items</label>
+          <div class="multi-select-wrap" id="menuItemsSelect">
+            {% for item in menu_items %}
+            <label>
+              <input type="checkbox" name="menu_items" value="{{ item.id }}">
+              {{ item.category.icon }} {{ item.name }} <span style="color:var(--text-l);font-size:11px">({{ item.category.name }})</span>
+            </label>
+            {% endfor %}
+          </div>
+          <small style="color:var(--text-l);font-size:11px;margin-top:4px;display:block">Select the dishes where this add-on will be suggested</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('addonModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="addonSubmitBtn">Add Add-On</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width:100%">
+    <div class="modal-header"><h2>Confirm Delete</h2><button class="modal-close" onclick="closeModal('deleteModal')">✕</button></div>
+    <div class="modal-body">
+      <p>Delete add-on <strong id="deleteAddonName"></strong>? This cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-danger" id="deleteConfirmBtn" onclick="doDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let deleteAddonId = null;
+
+function toggleAddon(id) {
+  fetch(`/admin/dashboard/addons/${id}/toggle/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrftoken, 'Content-Type': 'application/x-www-form-urlencoded'}
+  }).then(r=>r.json()).then(d => {
+    if(d.success) showToast('Availability toggled');
+    else showToast(d.error,'error');
+  });
+}
+
+function openAddModal() {
+  document.getElementById('addonModalTitle').textContent = 'Add Add-On';
+  document.getElementById('addonSubmitBtn').textContent = 'Add Add-On';
+  document.getElementById('addonId').value = '';
+  document.getElementById('addonForm').reset();
+  document.getElementById('f-veg').checked = true;
+  document.getElementById('f-avail').checked = true;
+  // Uncheck all menu items
+  document.querySelectorAll('#menuItemsSelect input[type=checkbox]').forEach(c => c.checked = false);
+  openModal('addonModal');
+}
+
+function openEditModal(id) {
+  document.getElementById('addonModalTitle').textContent = 'Edit Add-On';
+  document.getElementById('addonSubmitBtn').textContent = 'Save Changes';
+  document.getElementById('addonId').value = id;
+  fetch(`/admin/dashboard/addons/${id}/detail/`)
+    .then(r=>r.json())
+    .then(d => {
+      document.getElementById('f-name').value = d.name;
+      document.getElementById('f-price').value = d.price;
+      document.getElementById('f-veg').checked = d.is_veg;
+      document.getElementById('f-avail').checked = d.is_available;
+      // Set linked menu items
+      document.querySelectorAll('#menuItemsSelect input[type=checkbox]').forEach(c => {
+        c.checked = d.menu_item_ids.includes(parseInt(c.value));
+      });
+      openModal('addonModal');
+    });
+}
+
+document.getElementById('addonForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const id = document.getElementById('addonId').value;
+  const url = id ? `/admin/dashboard/addons/${id}/edit/` : '/admin/dashboard/addons/add/';
+  fetch(url, {
+    method: 'POST', headers: {'X-CSRFToken': csrftoken}, body: new FormData(this)
+  }).then(r=>r.json()).then(d => {
+    if(d.success) { showToast(d.message); closeModal('addonModal'); setTimeout(()=>location.reload(),800); }
+    else showToast(d.error,'error');
+  }).catch(()=>showToast('Failed to save','error'));
+});
+
+function confirmDelete(id, name) {
+  deleteAddonId = id;
+  document.getElementById('deleteAddonName').textContent = name;
+  openModal('deleteModal');
+}
+
+function doDelete() {
+  if(!deleteAddonId) return;
+  fetch(`/admin/dashboard/addons/${deleteAddonId}/delete/`, {
+    method: 'POST', headers: {'X-CSRFToken': csrftoken}
+  }).then(r=>r.json()).then(d => {
+    if(d.success) {
+      showToast(d.message); closeModal('deleteModal');
+      const row = document.getElementById('addon-row-'+deleteAddonId);
+      if(row) row.style.display='none';
+    } else showToast(d.error,'error');
+  });
+}
+</script>
+{% endblock %}

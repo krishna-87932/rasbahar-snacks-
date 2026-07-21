@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Set Delivery Location – Rasbahar Snacks{% endblock %}
+{% block title %}Set Delivery Address – Rasbahar Snacks{% endblock %}
 {% block extra_css %}
 <style>
-.loc-page {
+.addr-page {
   min-height: calc(100vh - 61px);
   display: flex;
   align-items: center;
@@ -10,8 +10,8 @@
   padding: 2rem 1rem;
   background: var(--bg);
 }
-.loc-wrap { width: 100%; max-width: 420px; }
-.loc-hero {
+.addr-wrap { width: 100%; max-width: 420px; }
+.addr-hero {
   background: linear-gradient(135deg, #FF5722, #E64A19);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   padding: 2.5rem 2rem 2rem;
@@ -19,7 +19,7 @@
   position: relative;
   overflow: hidden;
 }
-.loc-hero::before {
+.addr-hero::before {
   content: '';
   position: absolute;
   top: -40px; right: -40px;
@@ -27,8 +27,8 @@
   border-radius: 50%;
   background: rgba(255,255,255,.08);
 }
-.loc-icon { font-size: 3rem; margin-bottom: .75rem; position: relative; z-index: 1; }
-.loc-hero h1 {
+.addr-icon { font-size: 3rem; margin-bottom: .75rem; position: relative; z-index: 1; }
+.addr-hero h1 {
   font-size: 1.4rem;
   font-weight: 900;
   color: white;
@@ -36,14 +36,14 @@
   position: relative;
   z-index: 1;
 }
-.loc-hero p {
+.addr-hero p {
   color: rgba(255,255,255,.8);
   font-size: .85rem;
   margin-top: .35rem;
   position: relative;
   z-index: 1;
 }
-.loc-card {
+.addr-card {
   background: white;
   border-radius: 0 0 var(--r-lg) var(--r-lg);
   padding: 2rem 1.75rem 1.75rem;
@@ -51,12 +51,10 @@
   border-top: none;
   box-shadow: var(--shadow-md);
 }
-
-/* GPS Button */
-.gps-btn {
+.save-btn {
   width: 100%;
   padding: 1rem;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #FF5722, #E64A19);
   color: white;
   border: none;
   border-radius: var(--r-sm);
@@ -64,332 +62,56 @@
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: .6rem;
   transition: all .2s ease;
-  -webkit-tap-highlight-color: transparent;
+  margin-top: 1rem;
 }
-.gps-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(102,126,234,.4); }
-.gps-btn:active { transform: scale(.98); }
-.gps-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
-.gps-btn .spinner {
-  width: 20px; height: 20px;
-  border: 3px solid rgba(255,255,255,.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  display: none;
-}
-.gps-btn.loading .spinner { display: block; }
-.gps-btn.loading .btn-text { display: none; }
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.divider {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  margin: 1.25rem 0;
+.save-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(255,87,34,.4); }
+.save-btn:active { transform: scale(.98); }
+.back-link {
+  display: block;
+  text-align: center;
+  margin-top: 1rem;
+  font-size: .85rem;
   color: var(--text-l);
-  font-size: .8rem;
+  text-decoration: none;
   font-weight: 600;
 }
-.divider::before, .divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
-/* Status cards */
-.status-card {
-  padding: 1.2rem;
-  border-radius: var(--r-sm);
-  margin-top: 1.25rem;
-  display: none;
-  animation: fadeUp .3s ease;
-}
-.status-card.show { display: block; }
-.status-success {
-  background: #e8f5e9;
-  border: 1px solid rgba(46,125,50,.2);
-  color: #2e7d32;
-}
-.status-error {
-  background: #ffeaea;
-  border: 1px solid rgba(198,40,40,.18);
-  color: #c62828;
-}
-.status-card h3 {
-  font-size: 1rem;
-  font-weight: 800;
-  margin-bottom: .35rem;
-}
-.status-card p {
-  font-size: .85rem;
-  line-height: 1.5;
-}
-.distance-badge {
-  display: inline-block;
-  background: rgba(0,0,0,.08);
-  padding: .2rem .6rem;
-  border-radius: 4px;
-  font-size: .8rem;
-  font-weight: 700;
-  margin-top: .5rem;
-}
-
-.continue-btn {
-  width: 100%;
-  padding: .85rem;
-  margin-top: 1rem;
-  background: var(--green, #2e7d32);
-  color: white;
-  border: none;
-  border-radius: var(--r-sm);
-  font-size: .95rem;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  display: none;
-  text-align: center;
-  text-decoration: none;
-  transition: all .2s ease;
-}
-.continue-btn.show { display: block; }
-.continue-btn:hover { opacity: .9; transform: translateY(-1px); }
-
-.coord-display {
-  font-size: .75rem;
-  color: var(--text-l);
-  margin-top: .5rem;
-  text-align: center;
-  font-family: monospace;
-}
-
-@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-
-/* Manual address input */
-.manual-input { margin-top: 0; }
-.manual-note {
-  font-size: .78rem;
-  color: var(--text-l);
-  margin-top: .4rem;
-  line-height: 1.4;
-}
+.back-link:hover { color: var(--primary); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="loc-page">
-  <div class="loc-wrap fu">
-    <div class="loc-hero">
-      <div class="loc-icon">📍</div>
-      <h1>Set Delivery Location</h1>
-      <p>We need your location to check if we can deliver to you</p>
+<div class="addr-page">
+  <div class="addr-wrap fu">
+    <div class="addr-hero">
+      <div class="addr-icon">📍</div>
+      <h1>Set Delivery Address</h1>
+      <p>Enter your delivery address so we can bring your order to you</p>
     </div>
-    <div class="loc-card">
+    <div class="addr-card">
 
       {% if user.address %}
       <div class="form-group">
-        <label class="form-label">Your Address</label>
-        <div id="userAddressDisplay" style="padding:.75rem 1rem;background:var(--bg);border-radius:var(--r-sm);font-size:.9rem;color:var(--text-m);line-height:1.5">
+        <label class="form-label">Current Address</label>
+        <div style="padding:.75rem 1rem;background:var(--bg);border-radius:var(--r-sm);font-size:.9rem;color:var(--text-m);line-height:1.5">
           {{ user.address }}
         </div>
       </div>
       {% endif %}
 
-      <!-- GPS Button -->
-      <button class="gps-btn" id="gpsBtn" onclick="getGPSLocation()">
-        <span class="spinner"></span>
-        <span class="btn-text">📍 Use My Current Location</span>
-      </button>
-      <p class="manual-note" style="text-align:center;margin-top:.6rem">
-        Tap to share your phone's GPS location for accurate delivery check
-      </p>
-
-      <div class="divider">or enter manually</div>
-
-      <!-- Manual Address -->
-      <div class="manual-input">
+      <form method="post">
+        {% csrf_token %}
         <div class="form-group">
           <label class="form-label">Delivery Address</label>
-          <textarea id="addressInput" class="form-input" rows="2"
-            placeholder="House No., Street, Area, City, Pincode">{{ user.address }}</textarea>
+          <textarea name="address" class="form-input" rows="3"
+            placeholder="House No., Street, Area, City, Pincode" required>{{ user.address }}</textarea>
         </div>
-        <button class="gps-btn" style="background:linear-gradient(135deg,#FF5722,#E64A19)" id="manualBtn" onclick="getGPSLocation()">
-          <span class="spinner"></span>
-          <span class="btn-text">📍 Detect Location & Save</span>
-        </button>
-        <p class="manual-note">
-          ⚠️ Even with manual address, we'll use your GPS to verify delivery area.
-        </p>
-      </div>
+        <button type="submit" class="save-btn">Save Address ✓</button>
+      </form>
 
-      <!-- Status: Success -->
-      <div class="status-card status-success" id="statusSuccess">
-        <h3>✅ Great News!</h3>
-        <p>We deliver to your area! You can start ordering delicious snacks.</p>
-        <div class="distance-badge" id="distanceBadge"></div>
-      </div>
-
-      <!-- Status: Error / Out of Range -->
-      <div class="status-card status-error" id="statusError">
-        <h3>😔 Sorry!</h3>
-        <p id="errorMsg">We don't deliver to your area yet. We're expanding soon!</p>
-        <div class="distance-badge" id="distanceBadgeErr"></div>
-      </div>
-
-      <!-- Coordinates display -->
-      <div class="coord-display" id="coordDisplay" style="display:none"></div>
-
-      <!-- Continue button -->
-      <a href="{% url 'menu:home' %}" class="continue-btn" id="continueBtn">
-        Start Ordering 🍔 →
-      </a>
-
-      {% if user.has_location %}
-      <a href="{% url 'menu:home' %}" style="display:block;text-align:center;margin-top:1rem;font-size:.85rem;color:var(--text-l);text-decoration:none;font-weight:600">
-        ← Skip, keep current location
-      </a>
-      {% endif %}
+      <a href="{% url 'accounts:profile' %}" class="back-link">← Back to Profile</a>
 
     </div>
   </div>
 </div>
-
-<script>
-const CSRF = '{{ csrf_token }}';
-const SAVE_URL = '{% url "accounts:save_location" %}';
-
-function getGPSLocation() {
-  const gpsBtn = document.getElementById('gpsBtn');
-  const manualBtn = document.getElementById('manualBtn');
-
-  // Show loading state
-  [gpsBtn, manualBtn].forEach(b => { b.classList.add('loading'); b.disabled = true; });
-
-  // Hide old status
-  document.getElementById('statusSuccess').classList.remove('show');
-  document.getElementById('statusError').classList.remove('show');
-  document.getElementById('continueBtn').classList.remove('show');
-  document.getElementById('coordDisplay').style.display = 'none';
-
-  if (!navigator.geolocation) {
-    showError('Your browser does not support GPS location. Please use Chrome or Safari.');
-    resetButtons();
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    function(pos) {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      const accuracy = Math.round(pos.coords.accuracy);
-
-      // Show coordinates
-      const coordEl = document.getElementById('coordDisplay');
-      coordEl.textContent = `📡 ${lat.toFixed(6)}, ${lng.toFixed(6)} (±${accuracy}m)`;
-      coordEl.style.display = 'block';
-
-      // Reverse-geocode to get a human readable address and autofill
-      reverseGeocode(lat, lng).then(addr => {
-        try {
-          if (addr) {
-            const input = document.getElementById('addressInput');
-            input.value = addr;
-            const display = document.getElementById('userAddressDisplay');
-            if (display) display.textContent = addr;
-          }
-        } catch (e) {}
-
-        const address = document.getElementById('addressInput').value.trim();
-        // Save to server
-        saveLocation(lat, lng, address);
-      }).catch(() => {
-        const address = document.getElementById('addressInput').value.trim();
-        saveLocation(lat, lng, address);
-      });
-    },
-    function(err) {
-      let msg = 'Could not get your location. ';
-      switch(err.code) {
-        case 1: msg += 'Please allow location access in your browser settings.'; break;
-        case 2: msg += 'Location unavailable. Try again.'; break;
-        case 3: msg += 'Location request timed out. Try again.'; break;
-      }
-      showError(msg);
-      resetButtons();
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 0
-    }
-  );
-}
-
-// Reverse geocode using Nominatim (OpenStreetMap) to get a readable address
-function reverseGeocode(lat, lon) {
-  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
-  return fetch(url, { headers: { 'Accept': 'application/json' } })
-    .then(r => {
-      if (!r.ok) throw new Error('Geocode error');
-      return r.json();
-    })
-    .then(j => j.display_name || '')
-    .catch(() => '');
-}
-
-function saveLocation(lat, lng, address) {
-  fetch(SAVE_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': CSRF,
-    },
-    body: JSON.stringify({ latitude: lat, longitude: lng, address: address })
-  })
-  .then(r => r.json())
-  .then(data => {
-    resetButtons();
-    if (data.success) {
-      if (data.in_range) {
-        // Within range — show success
-        document.getElementById('statusSuccess').classList.add('show');
-        document.getElementById('distanceBadge').textContent =
-          `📏 ${data.distance_km} KM from restaurant (max: ${data.max_radius_km} KM)`;
-        document.getElementById('continueBtn').classList.add('show');
-      } else {
-        // Out of range
-        document.getElementById('statusError').classList.add('show');
-        document.getElementById('errorMsg').textContent =
-          `We currently deliver within ${data.max_radius_km} KM of our restaurant. Your location is ${data.distance_km} KM away.`;
-        document.getElementById('distanceBadgeErr').textContent =
-          `📏 ${data.distance_km} KM away (max: ${data.max_radius_km} KM)`;
-      }
-    } else {
-      showError(data.error || 'Something went wrong. Try again.');
-    }
-  })
-  .catch(() => {
-    resetButtons();
-    showError('Network error. Please check your connection and try again.');
-  });
-}
-
-function showError(msg) {
-  const el = document.getElementById('statusError');
-  document.getElementById('errorMsg').textContent = msg;
-  el.classList.add('show');
-}
-
-function resetButtons() {
-  const gpsBtn = document.getElementById('gpsBtn');
-  const manualBtn = document.getElementById('manualBtn');
-  [gpsBtn, manualBtn].forEach(b => { b.classList.remove('loading'); b.disabled = false; });
-}
-</script>
 {% endblock %}

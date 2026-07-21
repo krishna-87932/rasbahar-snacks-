@@ -7,7 +7,6 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 import json
-import math
 
 from .forms import RegisterForm, LoginForm, OTPForm, ProfileForm, ChangePasswordForm, ForgetPassword, ResetPasswordForm
 from .models import OTPRecord, generate_otp
@@ -31,85 +30,26 @@ def register_view(request):
     form = RegisterForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         data = form.cleaned_data
-        # Store registration data in session, redirect to location check
+        # Store registration data in session, send OTP and redirect to verify
         request.session['pending_register'] = {
             'name': data['name'],
             'phone_number': data['phone_number'],
             'email': data['email'],
             'password': data['password'],
         }
-        return redirect('accounts:register_location')
+        # Send OTP directly
+        record = OTPRecord.create_otp(
+            data['phone_number'],
+            OTPRecord.PURPOSE_REGISTER,
+            expiry_minutes=getattr(settings, 'OTP_EXPIRY_MINUTES', 10)
+        )
+        _send_otp(data['email'], record.otp, 'Registration')
+        return redirect('accounts:verify_otp', purpose='register')
 
     return render(request, 'accounts/register.html', {'form': form})
 
 
-def register_location_view(request):
-    """GPS location check page — shown after register form, before OTP."""
-    if request.user.is_authenticated:
-        return redirect('menu:home')
 
-    pending = request.session.get('pending_register')
-    if not pending:
-        messages.error(request, 'Session expired. Please register again.')
-        return redirect('accounts:register')
-
-    return render(request, 'accounts/register_location.html', {
-        'restaurant_lat': settings.RESTAURANT_LAT,
-        'restaurant_lng': settings.RESTAURANT_LNG,
-        'max_radius_km': settings.MAX_DELIVERY_RADIUS_KM,
-    })
-
-
-@require_POST
-def register_check_location_api(request):
-    """AJAX endpoint — checks GPS distance and sends OTP if within range."""
-    pending = request.session.get('pending_register')
-    if not pending:
-        return JsonResponse({'success': False, 'error': 'Session expired. Please register again.'}, status=400)
-
-    try:
-        data = json.loads(request.body)
-        lat = float(data.get('latitude', 0))
-        lng = float(data.get('longitude', 0))
-        address = data.get('address', '').strip()
-    except (json.JSONDecodeError, ValueError, TypeError):
-        return JsonResponse({'success': False, 'error': 'Invalid data.'}, status=400)
-
-    if not lat or not lng:
-        return JsonResponse({'success': False, 'error': 'Could not get your location.'}, status=400)
-
-    # Haversine distance calculation
-    R = 6371  # Earth radius in km
-    lat1 = math.radians(settings.RESTAURANT_LAT)
-    lat2 = math.radians(lat)
-    dlat = math.radians(lat - settings.RESTAURANT_LAT)
-    dlng = math.radians(lng - settings.RESTAURANT_LNG)
-    a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlng / 2) ** 2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    distance_km = round(R * c, 2)
-    in_range = distance_km <= settings.MAX_DELIVERY_RADIUS_KM
-
-    if in_range:
-        # Save coordinates in session and send OTP
-        pending['latitude'] = lat
-        pending['longitude'] = lng
-        pending['address'] = address
-        request.session['pending_register'] = pending
-        request.session.modified = True
-
-        record = OTPRecord.create_otp(
-            pending['phone_number'],
-            OTPRecord.PURPOSE_REGISTER,
-            expiry_minutes=getattr(settings, 'OTP_EXPIRY_MINUTES', 10)
-        )
-        _send_otp(pending['email'], record.otp, 'Registration')
-
-    return JsonResponse({
-        'success': True,
-        'in_range': in_range,
-        'distance_km': distance_km,
-        'max_radius_km': settings.MAX_DELIVERY_RADIUS_KM,
-    })
 
 def verify_otp_view(request, purpose):
     if request.user.is_authenticated:
@@ -146,8 +86,6 @@ def verify_otp_view(request, purpose):
                     password=pending_data['password'],
                     email=pending_data['email'],
                     address=pending_data.get('address', ''),
-                    latitude=pending_data.get('latitude'),
-                    longitude=pending_data.get('longitude'),
                     is_active=True,
                 ) # type: ignore
                 login(request, user)
@@ -210,16 +148,8 @@ def logout_view(request):
 def profile_view(request):
     form = ProfileForm(request.POST or None, request.FILES or None, instance=request.user)
     if request.method == 'POST' and form.is_valid():
-        user = form.save(commit=False)
-        # If address changed, clear old coordinates so user re-verifies location
-        if 'address' in form.changed_data:
-            user.latitude = None
-            user.longitude = None
-        user.save()
+        user = form.save()
         messages.success(request, 'Profile updated successfully!')
-        if not user.has_location:
-            messages.info(request, 'Please update your delivery location.')
-            return redirect('accounts:add_address')
         return redirect('accounts:profile')
     return render(request, 'accounts/profile.html', {'form': form})
 
@@ -240,46 +170,19 @@ def change_password_view(request):
 
 @login_required
 def add_address_view(request):
-    """GPS-based address / location page — shown after registration."""
+    """Address page for users to set/update their delivery address."""
     user = request.user
+    if request.method == 'POST':
+        address = request.POST.get('address', '').strip()
+        if address:
+            user.address = address
+            user.save()
+            messages.success(request, 'Address updated successfully!')
+            return redirect('accounts:profile')
+        else:
+            messages.error(request, 'Please enter a valid address.')
     return render(request, 'accounts/add_address.html', {
         'user': user,
-        'restaurant_lat': settings.RESTAURANT_LAT,
-        'restaurant_lng': settings.RESTAURANT_LNG,
-        'max_radius_km': settings.MAX_DELIVERY_RADIUS_KM,
-    })
-
-
-@login_required
-@require_POST
-def save_location_api(request):
-    """AJAX endpoint — saves GPS coordinates and checks delivery range."""
-    try:
-        data = json.loads(request.body)
-        lat = float(data.get('latitude', 0))
-        lng = float(data.get('longitude', 0))
-        address = data.get('address', '').strip()
-    except (json.JSONDecodeError, ValueError, TypeError):
-        return JsonResponse({'success': False, 'error': 'Invalid data.'}, status=400)
-
-    if not lat or not lng:
-        return JsonResponse({'success': False, 'error': 'Could not get your location.'}, status=400)
-
-    user = request.user
-    user.latitude = lat
-    user.longitude = lng
-    if address:
-        user.address = address
-    user.save()
-
-    distance = user.distance_from_restaurant_km
-    in_range = user.is_within_delivery_range
-
-    return JsonResponse({
-        'success': True,
-        'in_range': in_range,
-        'distance_km': distance,
-        'max_radius_km': settings.MAX_DELIVERY_RADIUS_KM,
     })
 
 

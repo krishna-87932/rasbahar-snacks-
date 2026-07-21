@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from menu.models import MenuItem
+from menu.models import MenuItem, AddOn
 import uuid
 
 
@@ -34,8 +34,25 @@ class CartItem(models.Model):
         return f"{self.quantity}x {self.menu_item.name}"
 
     @property
+    def addons_total(self):
+        total = sum(ca.addon.price * ca.quantity for ca in self.cart_addons.all())
+        return total
+
+    @property
     def subtotal(self):
-        return self.menu_item.price * self.quantity
+        return (self.menu_item.price + self.addons_total) * self.quantity
+
+
+class CartItemAddOn(models.Model):
+    cart_item = models.ForeignKey(CartItem, on_delete=models.CASCADE, related_name='cart_addons')
+    addon = models.ForeignKey(AddOn, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        unique_together = ('cart_item', 'addon')
+
+    def __str__(self):
+        return f"{self.quantity}x {self.addon.name} (for {self.cart_item})"
 
 
 class Order(models.Model):
@@ -109,5 +126,20 @@ class OrderItem(models.Model):
         return f"{self.quantity}x {self.item_name}"
 
     @property
+    def addons_total(self):
+        total = sum(oa.addon_price * oa.quantity for oa in self.order_addons.all())
+        return total
+
+    @property
     def subtotal(self):
-        return self.item_price * self.quantity
+        return (self.item_price + self.addons_total) * self.quantity
+
+
+class OrderItemAddOn(models.Model):
+    order_item = models.ForeignKey(OrderItem, on_delete=models.CASCADE, related_name='order_addons')
+    addon_name = models.CharField(max_length=200)
+    addon_price = models.DecimalField(max_digits=8, decimal_places=2)
+    quantity = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.quantity}x {self.addon_name}"

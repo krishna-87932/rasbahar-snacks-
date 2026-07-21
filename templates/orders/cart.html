@@ -50,6 +50,26 @@
 .cart-item-name { font-weight: 700; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cart-item-unit { color: var(--text-l); font-size: .8rem; margin-top: .18rem; }
 
+/* Cart item addons list */
+.cart-item-addons {
+  margin-top: .35rem;
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+}
+.cart-addon-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--green);
+  background: var(--green-l);
+  padding: .15rem .5rem;
+  border-radius: 4px;
+  width: fit-content;
+}
+
 /* Qty controls */
 .qty-controls { display: flex; align-items: center; gap: .35rem; }
 .qty-btn {
@@ -148,6 +168,13 @@
           <div class="cart-item-info">
             <div class="cart-item-name">{{ ci.menu_item.name }}</div>
             <div class="cart-item-unit">₹{{ ci.menu_item.price }} each</div>
+            {% if ci.cart_addons.all %}
+            <div class="cart-item-addons">
+              {% for ca in ci.cart_addons.all %}
+              <span class="cart-addon-chip">🧩 {{ ca.addon.name }} × {{ ca.quantity }} (+₹{{ ca.addon.price }})</span>
+              {% endfor %}
+            </div>
+            {% endif %}
           </div>
           <div class="qty-controls">
             <form method="post" action="{% url 'orders:update_cart' ci.menu_item.pk %}">

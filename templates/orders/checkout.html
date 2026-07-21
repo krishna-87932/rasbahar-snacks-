@@ -216,6 +216,12 @@
           <span>{{ ci.menu_item.name }} ×{{ ci.quantity }}</span>
           <span style="font-weight:600;color:var(--text)">₹{{ ci.subtotal }}</span>
         </div>
+        {% for ca in ci.cart_addons.all %}
+        <div class="summary-item" style="padding-left:1rem;font-size:.78rem;color:var(--green)">
+          <span>🧩 {{ ca.addon.name }} ×{{ ca.quantity }}</span>
+          <span>+₹{{ ca.addon.price }}</span>
+        </div>
+        {% endfor %}
       {% endfor %}
       <div class="summary-row"><span>Subtotal</span><span>₹{{ cart.total }}</span></div>
       <div class="summary-row"><span>Delivery</span><span class="free-tag">FREE</span></div>

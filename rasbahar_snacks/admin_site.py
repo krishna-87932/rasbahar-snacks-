@@ -51,6 +51,23 @@ class RasbaharAdminSite(AdminSite):
             path('dashboard/users/<int:user_id>/detail/', self.admin_view(dashboard_views.user_detail_api), name='user_detail_api'),
             path('dashboard/users/<int:user_id>/toggle/', self.admin_view(dashboard_views.toggle_user_status), name='toggle_user_status'),
 
+            # Add-Ons
+            path('dashboard/addons/', self.admin_view(dashboard_views.addons_dashboard), name='addons_dashboard'),
+            path('dashboard/addons/add/', self.admin_view(dashboard_views.add_addon), name='add_addon'),
+            path('dashboard/addons/<int:addon_id>/detail/', self.admin_view(dashboard_views.addon_detail_api), name='addon_detail_api'),
+            path('dashboard/addons/<int:addon_id>/edit/', self.admin_view(dashboard_views.edit_addon), name='edit_addon'),
+            path('dashboard/addons/<int:addon_id>/delete/', self.admin_view(dashboard_views.delete_addon), name='delete_addon'),
+            path('dashboard/addons/<int:addon_id>/toggle/', self.admin_view(dashboard_views.toggle_addon), name='toggle_addon'),
+
+            # Daily Menu
+            path('dashboard/daily-menu/', self.admin_view(dashboard_views.daily_menu_dashboard), name='daily_menu_dashboard'),
+            path('dashboard/daily-menu/add/', self.admin_view(dashboard_views.add_daily_menu), name='add_daily_menu'),
+            path('dashboard/daily-menu/<int:menu_id>/detail/', self.admin_view(dashboard_views.daily_menu_detail_api), name='daily_menu_detail_api'),
+            path('dashboard/daily-menu/<int:menu_id>/edit/', self.admin_view(dashboard_views.edit_daily_menu), name='edit_daily_menu'),
+            path('dashboard/daily-menu/<int:menu_id>/delete/', self.admin_view(dashboard_views.delete_daily_menu), name='delete_daily_menu'),
+            path('dashboard/daily-menu/<int:menu_id>/toggle/', self.admin_view(dashboard_views.toggle_daily_menu), name='toggle_daily_menu'),
+            path('dashboard/daily-menu/<int:menu_id>/reset-stock/', self.admin_view(dashboard_views.reset_daily_menu_stock), name='reset_daily_menu_stock'),
+
             # Original Django admin models page
             path('models/', self.admin_view(original_index), name='app_list'),
         ]

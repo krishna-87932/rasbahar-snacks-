@@ -153,9 +153,160 @@
 .empty-state .icon { font-size: 3.5rem; margin-bottom: .9rem; }
 .empty-state h3 { font-size: 1.1rem; font-weight: 800; color: var(--text); margin-bottom: .35rem; }
 
+/* ── Addon Popup (bottom sheet) ── */
+.addon-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 9999;
+  align-items: flex-end;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  animation: addonFadeIn .2s ease;
+}
+.addon-overlay.show { display: flex; }
+@keyframes addonFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.addon-sheet {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 520px;
+  max-height: 75vh;
+  overflow-y: auto;
+  box-shadow: 0 -10px 60px rgba(0,0,0,.2);
+  animation: addonSlideUp .3s ease;
+  padding: 0;
+}
+@keyframes addonSlideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+
+.addon-sheet-header {
+  padding: 1.25rem 1.5rem .5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 2;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+}
+.addon-sheet-header h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+.addon-sheet-header .sub {
+  font-size: .78rem;
+  color: var(--text-l);
+  margin-top: .15rem;
+}
+.addon-close {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+.addon-close:hover { background: #fee; color: #e74c3c; }
+
+.addon-sheet-body { padding: 1rem 1.5rem 1.5rem; }
+
+.addon-card {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: .85rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.addon-card:last-child { border-bottom: none; }
+.addon-card-img {
+  width: 52px; height: 52px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.addon-card-img img { width: 100%; height: 100%; object-fit: cover; }
+.addon-card-info { flex: 1; min-width: 0; }
+.addon-card-name { font-size: .88rem; font-weight: 700; }
+.addon-card-price { font-size: .82rem; color: var(--primary); font-weight: 800; margin-top: .1rem; }
+.addon-add-btn {
+  background: linear-gradient(135deg, #00b894, #00a383);
+  color: white;
+  border: none;
+  padding: .45rem .9rem;
+  border-radius: 8px;
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.addon-add-btn:hover { transform: scale(1.05); box-shadow: 0 2px 10px rgba(0,184,148,.3); }
+.addon-add-btn:disabled { opacity: .6; transform: none; cursor: default; }
+.addon-add-btn.added {
+  background: var(--bg);
+  color: var(--green);
+  border: 1.5px solid var(--green);
+}
+
+.addon-dismiss {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: .75rem;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text-l);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color var(--transition);
+  margin-top: .5rem;
+}
+.addon-dismiss:hover { color: var(--text); }
+
+/* Toast for menu page */
+.menu-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #2d3436;
+  color: white;
+  padding: .7rem 1.4rem;
+  border-radius: 12px;
+  font-size: .88rem;
+  font-weight: 600;
+  box-shadow: 0 8px 30px rgba(0,0,0,.25);
+  z-index: 9998;
+  opacity: 0;
+  transition: all .35s cubic-bezier(.4,0,.2,1);
+  pointer-events: none;
+}
+.menu-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
 @media (max-width: 768px) {
   .menu-layout { grid-template-columns: 1fr; }
   .filter-card  { display: none; }
+  .addon-sheet { max-width: 100%; }
 }
 </style>
 {% endblock %}
@@ -213,10 +364,7 @@
             <div class="item-footer">
               <span class="item-price">{{ item.price }}</span>
               {% if user.is_authenticated %}
-                <form method="post" action="{% url 'orders:add_to_cart' item.pk %}">
-                  {% csrf_token %}
-                  <button type="submit" class="add-btn press">+</button>
-                </form>
+                <button type="button" class="add-btn press" onclick="addToCart({{ item.pk }}, '{{ item.name|escapejs }}')" data-item-id="{{ item.pk }}">+</button>
               {% else %}
                 <a href="{% url 'accounts:login' %}" class="add-btn press">+</a>
               {% endif %}
@@ -236,4 +384,148 @@
   </div>
 </div>
 
+<!-- Add-On Suggestion Popup -->
+<div class="addon-overlay" id="addonOverlay">
+  <div class="addon-sheet">
+    <div class="addon-sheet-header">
+      <div>
+        <h3>🧩 Want to add something extra?</h3>
+        <div class="sub" id="addonItemName">with your order</div>
+      </div>
+      <button class="addon-close" onclick="closeAddonPopup()">✕</button>
+    </div>
+    <div class="addon-sheet-body" id="addonList">
+      <!-- Populated by JS -->
+    </div>
+    <button class="addon-dismiss" onclick="closeAddonPopup()">No thanks, continue shopping</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="menu-toast" id="menuToast"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCsrf() {
+  let v = null;
+  document.cookie.split(';').forEach(c => {
+    c = c.trim();
+    if (c.startsWith('csrftoken=')) v = decodeURIComponent(c.substring(10));
+  });
+  return v;
+}
+
+function showMenuToast(msg) {
+  const t = document.getElementById('menuToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function addToCart(itemId, itemName) {
+  fetch(`/cart/add/${itemId}/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': getCsrf(),
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (!data.success) return;
+
+    // Update cart badge if exists
+    const badge = document.querySelector('.cart-badge, .cart-count');
+    if (badge) badge.textContent = data.cart_count;
+
+    // If item has addons, show the popup
+    if (data.addons && data.addons.length > 0) {
+      showAddonPopup(data.addons, data.cart_item_id, itemName);
+    } else {
+      showMenuToast(`✓ ${itemName} added to cart!`);
+    }
+  })
+  .catch(() => showMenuToast('Failed to add to cart'));
+}
+
+function showAddonPopup(addons, cartItemId, itemName) {
+  document.getElementById('addonItemName').textContent = `with ${itemName}`;
+  const list = document.getElementById('addonList');
+  list.innerHTML = '';
+
+  addons.forEach(a => {
+    const card = document.createElement('div');
+    card.className = 'addon-card';
+    card.innerHTML = `
+      <div class="addon-card-img">
+        ${a.image_url ? `<img src="${a.image_url}" alt="${a.name}">` : '🧩'}
+      </div>
+      <div class="addon-card-info">
+        <div class="addon-card-name">${a.is_veg ? '🟢' : '🔴'} ${a.name}</div>
+        <div class="addon-card-price">+₹${a.price}</div>
+      </div>
+      <button class="addon-add-btn" onclick="addAddonToCart(this, ${cartItemId}, ${a.id}, '${a.name.replace(/'/g, "\\'")}')">+ Add</button>
+    `;
+    list.appendChild(card);
+  });
+
+  document.getElementById('addonOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function addAddonToCart(btn, cartItemId, addonId, addonName) {
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  const formData = new FormData();
+  formData.append('addon_id', addonId);
+
+  fetch(`/cart/addon/${cartItemId}/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': getCsrf(),
+    },
+    body: formData,
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      btn.textContent = '✓ Added';
+      btn.classList.add('added');
+
+      // Update cart badge
+      const badge = document.querySelector('.cart-badge, .cart-count');
+      if (badge) badge.textContent = data.cart_count;
+    } else {
+      btn.textContent = '+ Add';
+      btn.disabled = false;
+    }
+  })
+  .catch(() => {
+    btn.textContent = '+ Add';
+    btn.disabled = false;
+  });
+}
+
+function closeAddonPopup() {
+  document.getElementById('addonOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+  showMenuToast('✓ Item added to cart!');
+}
+
+// Close on overlay click
+document.getElementById('addonOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeAddonPopup();
+});
+
+// Close on Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('addonOverlay').classList.contains('show')) {
+    closeAddonPopup();
+  }
+});
+</script>
 {% endblock %}

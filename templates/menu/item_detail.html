@@ -67,6 +67,44 @@
 .item-price { font-size: 2rem; font-weight: 900; color: var(--primary); letter-spacing: -.03em; }
 .item-price::before { content: '₹'; font-size: 1.3rem; }
 
+/* Available Add-ons Section */
+.addons-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1.5px dashed var(--border-d);
+}
+.addons-section-title {
+  font-size: .85rem;
+  font-weight: 800;
+  color: var(--text-m);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: .75rem;
+}
+.addon-item-row {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.addon-item-row:last-child { border-bottom: none; }
+.addon-item-img {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.addon-item-img img { width: 100%; height: 100%; object-fit: cover; }
+.addon-item-info { flex: 1; }
+.addon-item-name { font-size: .82rem; font-weight: 600; }
+.addon-item-price { font-size: .78rem; color: var(--primary); font-weight: 700; }
+
 /* Related */
 .related-title { font-size: 1.2rem; font-weight: 900; letter-spacing: -.02em; margin-bottom: 1rem; }
 .related-grid {
@@ -100,9 +138,91 @@
 .related-price { font-size: .88rem; color: var(--primary); font-weight: 800; }
 .related-price::before { content: '₹'; font-size: .75rem; }
 
+/* ── Addon Popup (bottom sheet) ── */
+.addon-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 9999;
+  align-items: flex-end;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  animation: addonFadeIn .2s ease;
+}
+.addon-overlay.show { display: flex; }
+@keyframes addonFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.addon-sheet {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 520px;
+  max-height: 75vh;
+  overflow-y: auto;
+  box-shadow: 0 -10px 60px rgba(0,0,0,.2);
+  animation: addonSlideUp .3s ease;
+}
+@keyframes addonSlideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+.addon-sheet-header {
+  padding: 1.25rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: white; z-index: 2;
+  border-bottom: 1px solid var(--border);
+}
+.addon-sheet-header h3 { font-size: 1.05rem; font-weight: 800; }
+.addon-sheet-header .sub { font-size: .78rem; color: var(--text-l); margin-top: .15rem; }
+.addon-close {
+  width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: var(--bg); font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition); flex-shrink: 0;
+}
+.addon-close:hover { background: #fee; color: #e74c3c; }
+.addon-sheet-body { padding: 1rem 1.5rem 1.5rem; }
+.addon-card {
+  display: flex; align-items: center; gap: .85rem;
+  padding: .85rem 0; border-bottom: 1px solid var(--border);
+}
+.addon-card:last-child { border-bottom: none; }
+.addon-card-img {
+  width: 52px; height: 52px; border-radius: 10px;
+  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; flex-shrink: 0; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.addon-card-img img { width: 100%; height: 100%; object-fit: cover; }
+.addon-card-info { flex: 1; min-width: 0; }
+.addon-card-name { font-size: .88rem; font-weight: 700; }
+.addon-card-price { font-size: .82rem; color: var(--primary); font-weight: 800; margin-top: .1rem; }
+.addon-add-btn {
+  background: linear-gradient(135deg, #00b894, #00a383);
+  color: white; border: none; padding: .45rem .9rem; border-radius: 8px;
+  font-size: .78rem; font-weight: 700; cursor: pointer;
+  transition: all var(--transition); white-space: nowrap;
+}
+.addon-add-btn:hover { transform: scale(1.05); box-shadow: 0 2px 10px rgba(0,184,148,.3); }
+.addon-add-btn:disabled { opacity: .6; transform: none; cursor: default; }
+.addon-add-btn.added { background: var(--bg); color: var(--green); border: 1.5px solid var(--green); }
+.addon-dismiss {
+  display: block; width: 100%; text-align: center; padding: .75rem;
+  font-size: .85rem; font-weight: 600; color: var(--text-l);
+  background: none; border: none; cursor: pointer; transition: color var(--transition); margin-top: .5rem;
+}
+.addon-dismiss:hover { color: var(--text); }
+
+.menu-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: #2d3436; color: white; padding: .7rem 1.4rem; border-radius: 12px;
+  font-size: .88rem; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,.25);
+  z-index: 9998; opacity: 0; transition: all .35s cubic-bezier(.4,0,.2,1); pointer-events: none;
+}
+.menu-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
 @media (max-width: 650px) {
   .item-hero { grid-template-columns: 1fr; }
   .item-hero-img { height: 220px; }
+  .addon-sheet { max-width: 100%; }
 }
 </style>
 {% endblock %}
@@ -149,12 +269,29 @@
       </div>
 
       {% if user.is_authenticated %}
-        <form method="post" action="{% url 'orders:add_to_cart' item.pk %}">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-primary press" style="padding:.8rem 1.75rem">🛒 Add to Cart</button>
-        </form>
+        <button type="button" class="btn btn-primary press" style="padding:.8rem 1.75rem" onclick="addToCart({{ item.pk }}, '{{ item.name|escapejs }}')">🛒 Add to Cart</button>
       {% else %}
         <a href="{% url 'accounts:login' %}" class="btn btn-primary press" style="padding:.8rem 1.75rem">Login to Order</a>
+      {% endif %}
+
+      <!-- Available Add-ons Display -->
+      {% if item.addons.all %}
+      <div class="addons-section">
+        <div class="addons-section-title">🧩 Available Add-Ons</div>
+        {% for addon in item.addons.all %}
+          {% if addon.is_available %}
+          <div class="addon-item-row">
+            <div class="addon-item-img">
+              {% if addon.image %}<img src="{{ addon.image.url }}" alt="{{ addon.name }}">{% else %}🧩{% endif %}
+            </div>
+            <div class="addon-item-info">
+              <div class="addon-item-name">{% if addon.is_veg %}🟢{% else %}🔴{% endif %} {{ addon.name }}</div>
+              <div class="addon-item-price">+₹{{ addon.price }}</div>
+            </div>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
       {% endif %}
     </div>
   </div>
@@ -178,4 +315,117 @@
   {% endif %}
 
 </div>
+
+<!-- Add-On Suggestion Popup -->
+<div class="addon-overlay" id="addonOverlay">
+  <div class="addon-sheet">
+    <div class="addon-sheet-header">
+      <div>
+        <h3>🧩 Want to add something extra?</h3>
+        <div class="sub" id="addonItemName">with your order</div>
+      </div>
+      <button class="addon-close" onclick="closeAddonPopup()">✕</button>
+    </div>
+    <div class="addon-sheet-body" id="addonList"></div>
+    <button class="addon-dismiss" onclick="closeAddonPopup()">No thanks, continue</button>
+  </div>
+</div>
+
+<div class="menu-toast" id="menuToast"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCsrf() {
+  let v = null;
+  document.cookie.split(';').forEach(c => {
+    c = c.trim();
+    if (c.startsWith('csrftoken=')) v = decodeURIComponent(c.substring(10));
+  });
+  return v;
+}
+
+function showMenuToast(msg) {
+  const t = document.getElementById('menuToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function addToCart(itemId, itemName) {
+  fetch(`/cart/add/${itemId}/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrf(), 'X-Requested-With': 'XMLHttpRequest' },
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (!data.success) return;
+    const badge = document.querySelector('.cart-badge, .cart-count');
+    if (badge) badge.textContent = data.cart_count;
+    if (data.addons && data.addons.length > 0) {
+      showAddonPopup(data.addons, data.cart_item_id, itemName);
+    } else {
+      showMenuToast(`✓ ${itemName} added to cart!`);
+    }
+  })
+  .catch(() => showMenuToast('Failed to add to cart'));
+}
+
+function showAddonPopup(addons, cartItemId, itemName) {
+  document.getElementById('addonItemName').textContent = `with ${itemName}`;
+  const list = document.getElementById('addonList');
+  list.innerHTML = '';
+  addons.forEach(a => {
+    const card = document.createElement('div');
+    card.className = 'addon-card';
+    card.innerHTML = `
+      <div class="addon-card-img">${a.image_url ? `<img src="${a.image_url}" alt="${a.name}">` : '🧩'}</div>
+      <div class="addon-card-info">
+        <div class="addon-card-name">${a.is_veg ? '🟢' : '🔴'} ${a.name}</div>
+        <div class="addon-card-price">+₹${a.price}</div>
+      </div>
+      <button class="addon-add-btn" onclick="addAddonToCart(this, ${cartItemId}, ${a.id}, '${a.name.replace(/'/g, "\\'")}')">+ Add</button>
+    `;
+    list.appendChild(card);
+  });
+  document.getElementById('addonOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function addAddonToCart(btn, cartItemId, addonId, addonName) {
+  btn.disabled = true;
+  btn.textContent = '...';
+  const fd = new FormData();
+  fd.append('addon_id', addonId);
+  fetch(`/cart/addon/${cartItemId}/`, {
+    method: 'POST', headers: { 'X-CSRFToken': getCsrf() }, body: fd,
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      btn.textContent = '✓ Added';
+      btn.classList.add('added');
+    } else { btn.textContent = '+ Add'; btn.disabled = false; }
+  })
+  .catch(() => { btn.textContent = '+ Add'; btn.disabled = false; });
+}
+
+function closeAddonPopup() {
+  document.getElementById('addonOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+  showMenuToast('✓ Item added to cart!');
+}
+
+document.getElementById('addonOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeAddonPopup();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('addonOverlay').classList.contains('show')) {
+    closeAddonPopup();
+  }
+});
+</script>
 {% endblock %}

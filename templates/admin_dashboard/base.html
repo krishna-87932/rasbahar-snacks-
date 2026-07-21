@@ -340,6 +340,12 @@
     <a href="{% url 'admin:users_dashboard' %}" class="nav-item {% if page == 'users' %}active{% endif %}" onclick="closeSidebar()">
       <span class="icon">👥</span> Users
     </a>
+    <a href="{% url 'admin:addons_dashboard' %}" class="nav-item {% if page == 'addons' %}active{% endif %}" onclick="closeSidebar()">
+      <span class="icon">🧩</span> Add-Ons
+    </a>
+    <a href="{% url 'admin:daily_menu_dashboard' %}" class="nav-item {% if page == 'daily_menu' %}active{% endif %}" onclick="closeSidebar()">
+      <span class="icon">🕐</span> Daily Menu
+    </a>
 
     <div class="nav-section">System</div>
     <a href="{% url 'admin:app_list' %}" class="nav-item" onclick="closeSidebar()">
