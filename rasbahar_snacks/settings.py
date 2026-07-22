@@ -10,7 +10,7 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = os.environ.get(
     'DJANGO_ALLOWED_HOSTS',
-    'rasbaharsnacks123.pythonanywhere.com,localhost,127.0.0.1,192.168.43.8,0.0.0.0, *'
+    'rasbaharsnacks123.pythonanywhere.com,localhost,127.0.0.1,192.168.43.8,0.0.0.0, rasbaharsnacks.vercel.app'
 ).split(',')
 
 INSTALLED_APPS = [
