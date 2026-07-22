@@ -8,10 +8,14 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-rasbahar-snack
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = os.environ.get(
-    'DJANGO_ALLOWED_HOSTS',
-    'rasbaharsnacks123.pythonanywhere.com,localhost,127.0.0.1,192.168.43.8,0.0.0.0, rasbaharsnacks.vercel.app'
-).split(',')
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get(
+        'DJANGO_ALLOWED_HOSTS',
+        'rasbaharsnacks.vercel.app,rasbaharsnacks123.pythonanywhere.com,localhost,127.0.0.1,0.0.0.0'
+    ).split(',')
+    if host.strip()
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
